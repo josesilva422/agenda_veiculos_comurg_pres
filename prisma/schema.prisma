@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum VehicleStatus {
+  ATIVO
+  MANUTENCAO
+  INATIVO
+}
+
+enum BookingStatus {
+  PENDENTE
+  APROVADO
+  REJEITADO
+  CANCELADO
+  ALTERACAO_PENDENTE
+}
+
+model User {
+  id          String   @id @default(cuid())
+  nome        String
+  email       String   @unique
+  senhaHash   String
+  matricula   String?  @unique
+  telefone    String?
+  setor       String? // lotação
+  cargo       String?
+  contato     String?
+  cnh         String?
+  cnhValidade DateTime?
+  role        Role     @default(USER)
+  ativo       Boolean  @default(true)
+  // true enquanto o usuário usa a senha padrão: é obrigado a trocá-la no primeiro acesso
+  trocarSenha Boolean  @default(false)
+  criadoEm    DateTime @default(now())
+
+  bookings      Booking[]               @relation("Solicitante")
+  decisoes      Booking[]               @relation("Decisor")
+  notifications Notification[]
+}
+
+model Vehicle {
+  id         String        @id @default(cuid())
+  prefixo    String        @unique
+  placa      String        @unique
+  tipo       String
+  lotacao    Int
+  contrato   String? // contrato a que o veículo pertence (opcional)
+  status     VehicleStatus @default(ATIVO)
+  observacao String?
+  criadoEm   DateTime      @default(now())
+  bookings   Booking[]
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation("Solicitante", fields: [userId], references: [id])
+  vehicleId     String
+  vehicle       Vehicle       @relation(fields: [vehicleId], references: [id])
+  inicio        DateTime
+  fim           DateTime
+  destino       String
+  passageiros   Int           @default(1)
+  // quem dirige neste agendamento (opcional)
+  motorista     String?
+  // data/hora em que o solicitante aceitou o Termo de Responsabilidade ao criar o agendamento
+  termoAceitoEm DateTime?
+  status        BookingStatus @default(PENDENTE)
+  decididoPorId String?
+  decididoPor   User?         @relation("Decisor", fields: [decididoPorId], references: [id])
+  decididoEm    DateTime?
+  justificativa String?
+  // JSON da última versão aprovada, guardado só enquanto há uma alteração pendente
+  versaoAnterior String?
+  criadoEm      DateTime      @default(now())
+  atualizadoEm  DateTime      @updatedAt
+
+  notifications Notification[]
+
+  @@index([vehicleId, inicio, fim])
+  @@index([status])
+  @@index([inicio])
+  @@index([userId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tipo      String
+  mensagem  String
+  bookingId String?
+  booking   Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  lida      Boolean  @default(false)
+  criadoEm  DateTime @default(now())
+
+  @@index([userId, lida])
+}
+
+/// Tentativas de login com erro (limite por e-mail/matrícula). No banco, e não na memória, para valer entre servidores.
+model LoginTentativa {
+  chave  String   @id
+  falhas Int      @default(0)
+  desde  DateTime
+}

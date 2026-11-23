@@ -1,26 +1,128 @@
 @import "tailwindcss";
 
+/* Identidade visual: troque as cores aqui e o sistema inteiro acompanha.
+   Viram classes: bg-marca, text-marca, bg-marca-suave, border-borda, bg-fundo... */
+@theme {
+  --color-marca: #0e4c5a;
+  --color-marca-forte: #0a3944;
+  --color-marca-suave: #e7eff1;
+  --color-borda: #d8dce2;
+  --color-fundo: #f4f5f7;
+  --font-sans: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Interface apenas em tema claro. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-borda);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Tabela padrão (componente Tabela em components/ui.tsx). */
+  .tabela {
+    width: 100%;
+    text-align: left;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .tabela th {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--color-borda);
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .tabela td {
+    padding: 0.5rem 0.75rem;
+  }
+  .tabela tbody tr + tr {
+    border-top: 1px solid var(--color-borda);
+  }
+  .tabela tbody tr:hover {
+    background: #f8fafc;
+  }
+  .tabela.numerica :is(th, td):not(:first-child) {
+    text-align: right;
+  }
+
+  /* Celular: cada linha vira um bloco "rótulo: valor", sem rolagem lateral. */
+  @media (max-width: 639px) {
+    .tabela,
+    .tabela tbody,
+    .tabela tr {
+      display: block;
+    }
+    .tabela thead {
+      display: none;
+    }
+    .tabela tr {
+      padding: 0.5rem 0.75rem;
+    }
+    .tabela td {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.2rem 0;
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+    .tabela td::before {
+      content: attr(data-label);
+      flex-shrink: 0;
+      color: #64748b;
+      text-align: left;
+    }
+  }
+}
+
+/* Calendário (FullCalendar) com as mesmas cores do sistema. */
+.fc {
+  --fc-border-color: var(--color-borda);
+  --fc-today-bg-color: var(--color-marca-suave);
+  --fc-button-bg-color: #fff;
+  --fc-button-text-color: #1e293b;
+  --fc-button-border-color: #cbd5e1;
+  --fc-button-hover-bg-color: #f1f5f9;
+  --fc-button-hover-border-color: #cbd5e1;
+  --fc-button-active-bg-color: var(--color-marca);
+  --fc-button-active-border-color: var(--color-marca);
+  font-size: 0.875rem;
+}
+.fc .fc-toolbar-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+.fc .fc-button {
+  box-shadow: none !important;
+}
+.fc .fc-button-primary:not(:disabled).fc-button-active {
+  color: #fff;
+}
+
+/* Calendário no celular: marcações viram barras coloridas (o detalhe fica no pop-up do dia). */
+@media (max-width: 639px) {
+  .fc .fc-toolbar { gap: 0.5rem; }
+  .fc .fc-toolbar-title { font-size: 1rem; text-transform: capitalize; }
+  .fc .fc-button { padding: 0.3rem 0.55rem; font-size: 0.8rem; }
+  .fc .fc-col-header-cell-cushion { padding: 0.25rem 0; font-size: 0.7rem; }
+  .fc .fc-daygrid-day-frame { min-height: 3.75rem; }
+  .fc .fc-daygrid-day-top { justify-content: center; }
+  .fc .fc-daygrid-day-number { padding: 0.15rem; font-size: 0.75rem; }
+  .fc .fc-daygrid-event { height: 6px; margin: 1px 3px; border-radius: 3px; }
+  .fc .fc-daygrid-event .fc-event-main,
+  .fc .fc-daygrid-event .fc-event-time,
+  .fc .fc-daygrid-event .fc-event-title { display: none; }
+  .fc .fc-daygrid-more-link { display: block; text-align: center; font-size: 0.7rem; font-weight: 600; }
+  .fc .fc-toolbar.fc-footer-toolbar { margin-top: 0.75rem; }
+  .fc .fc-timegrid-axis-cushion, .fc .fc-timegrid-slot-label-cushion { font-size: 0.7rem; }
+  .fc .fc-list-event-time { white-space: nowrap; }
 }

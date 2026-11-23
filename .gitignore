@@ -15,6 +15,7 @@
 
 # next.js
 /.next/
+/.next-*/
 /out/
 
 # production
@@ -32,6 +33,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +41,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/prisma/*.db
+/prisma/*.db-journal
+/uploads
+.env
+
+# cópias de segurança do banco local e backups (contêm dados de pessoas)
+/prisma/*.bak*
+/prisma/*.db.*
+/backups

@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Agendamento de Veículos
 
-## Getting Started
+Sistema web para solicitação, aprovação e controle de uso de veículos.
 
-First, run the development server:
+- **Usuário:** escolhe veículo, data e horário (e informa o motorista, se quiser); concorda com o Termo de Responsabilidade; edita ou cancela a própria solicitação; vê o calendário de ocupação.
+- **Administrador:** aprova/rejeita, vê quem solicita, cadastra usuários e veículos, consulta calendário (dia/semana/mês), relatórios (Excel/PDF) e notificações. O aceite do termo de responsabilidade fica registrado em cada agendamento e consta nos relatórios.
+- **Acesso:** login por e-mail ou matrícula; usuários novos entram com a senha padrão (`SENHA_PADRAO`, padrão `Comurg@2026`) e trocam no primeiro acesso (8+ caracteres com letra, número e caractere especial).
+
+Stack: Next.js 15 · TypeScript · Prisma + SQLite (desenvolvimento) / PostgreSQL no Supabase (produção) · Auth.js · FullCalendar · Tailwind · app instalável (PWA) · Vercel.
+
+## Desenvolvimento
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env        # defina NEXTAUTH_SECRET
+npm run db:setup            # cria o banco e dados de teste (admin@exemplo.com / admin123, usuario@exemplo.com / user123)
+npm run dev                 # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Verificações: `npm test`, `npm run lint`, `npm run build`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> As contas de teste existem **somente** em desenvolvimento. Não rode `db:seed` em produção.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Documentação
 
-## Learn More
+- [Publicação, backup e restauração](docs/DEPLOY.md)
+- [Manual de uso](docs/MANUAL.md)
+- [Plano de ação original](PLANO_DE_ACAO.md)
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Comando | Função |
+|---|---|
+| `npm run db:deploy` | Aplica migrações pendentes (produção) |
+| `npm run admin:create` | Cria o primeiro administrador (variáveis `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`) |
+| `npm run backup` | Backup do banco (servidor próprio, SQLite) |
+| `npm run db:pg:sync` | Gera `prisma/postgres/schema.prisma` (PostgreSQL) a partir do schema principal |
