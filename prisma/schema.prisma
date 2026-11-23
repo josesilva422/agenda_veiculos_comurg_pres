@@ -74,6 +74,9 @@ model Booking {
   passageiros   Int           @default(1)
   // quem dirige neste agendamento (opcional)
   motorista     String?
+  // hodômetro do veículo (km) no início e no fim do uso; o solicitante informa, o administrador pode corrigir
+  kmInicial     Int?
+  kmFinal       Int?
   // data/hora em que o solicitante aceitou o Termo de Responsabilidade ao criar o agendamento
   termoAceitoEm DateTime?
   status        BookingStatus @default(PENDENTE)

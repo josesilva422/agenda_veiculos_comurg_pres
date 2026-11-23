@@ -10,7 +10,7 @@ export async function GET() {
     where: { userId: session.user.id },
     orderBy: { criadoEm: "desc" },
     take: 15,
-    select: { id: true, mensagem: true, lida: true, criadoEm: true, bookingId: true },
+    select: { id: true, tipo: true, mensagem: true, lida: true, criadoEm: true, bookingId: true },
   });
   return NextResponse.json({ itens });
 }

@@ -4,6 +4,7 @@ import { Badge, Stat, Stats, Tabela, Titulo, btnCls, cardCls, linkCls } from "@/
 import { fmtData, fmtPeriodo } from "@/lib/datetime";
 import { alertaLabel, calcularAlertas } from "@/lib/alerts";
 import { overlaps } from "@/lib/booking-rules";
+import { pendenciaKm, textoPendencia } from "@/lib/km";
 import { AGUARDANDO, COR } from "@/lib/status";
 import DecidirAgendamento from "@/components/DecidirAgendamento";
 import { aprovarLote } from "./agendamentos/actions";
@@ -31,7 +32,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
   const { decidir } = await searchParams;
   const agora = new Date();
   const fila = { status: { in: AGUARDANDO } };
-  const [pendentes, totalPendentes, emUso, proximos, comCnh] = await Promise.all([
+  const [pendentes, totalPendentes, emUso, proximos, comCnh, kmCandidatas] = await Promise.all([
     prisma.booking.findMany({
       where: fila,
       select: {
@@ -54,7 +55,22 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
       where: { ativo: true, cnhValidade: { not: null } },
       select: { id: true, nome: true, ativo: true, cnhValidade: true },
     }),
+    // reservas aprovadas em que o uso já começou e falta algum km (confirmado em memória por pendenciaKm)
+    prisma.booking.findMany({
+      where: { status: "APROVADO", inicio: { lte: agora }, OR: [{ kmInicial: null }, { kmFinal: null, fim: { lte: agora } }] },
+      select: {
+        id: true, status: true, inicio: true, fim: true, kmInicial: true, kmFinal: true,
+        user: { select: { nome: true, setor: true } },
+        vehicle: { select: { prefixo: true } },
+      },
+      orderBy: { inicio: "desc" },
+      take: 200,
+    }),
   ]);
+  const kmPendentes = kmCandidatas.flatMap((b) => {
+    const p = pendenciaKm(b, agora);
+    return p ? [{ b, texto: textoPendencia(p) }] : [];
+  });
   const alertas = calcularAlertas(comCnh, agora);
   const conflitos = await calcularConflitos(pendentes);
 
@@ -66,6 +82,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
           <Stat valor={totalPendentes} rotulo="Pendentes de decisão" />
           <Stat valor={emUso} rotulo="Veículos em uso agora" />
           <Stat valor={alertas.length} rotulo="Alertas de CNH" />
+          <Stat valor={kmPendentes.length} rotulo="Reservas sem km" />
         </Stats>
 
         {alertas.length > 0 && (
@@ -129,6 +146,25 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
             )}
           </form>
         </section>
+
+        {kmPendentes.length > 0 && (
+          <section aria-labelledby="km-pendente">
+            <h2 id="km-pendente" className="mb-2 text-base font-semibold">Quilometragem pendente ({kmPendentes.length})</h2>
+            <ul className={`divide-y text-sm ${cardCls}`}>
+              {kmPendentes.slice(0, 20).map(({ b, texto }) => (
+                <li key={b.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
+                  <span>
+                    <b>{b.vehicle.prefixo}</b> — {b.user.nome}
+                    <span className="text-slate-500"> · {fmtData(b.inicio)} · falta o {texto}</span>
+                  </span>
+                  <Link href={`/admin?decidir=${b.id}`} className={linkCls} scroll={false}>Abrir</Link>
+                </li>
+              ))}
+            </ul>
+            {kmPendentes.length > 20 && <p className="mt-1 text-xs text-slate-500">Mostrando 20 de {kmPendentes.length}.</p>}
+            <p className="mt-1 text-xs text-slate-500">Os solicitantes são lembrados por notificação a cada 24 horas.</p>
+          </section>
+        )}
 
         <section>
           <h2 className="mb-2 text-base font-semibold">Próximos agendamentos aprovados</h2>

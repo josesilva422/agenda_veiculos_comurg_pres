@@ -6,6 +6,8 @@ import { fmtDateTime, fmtPeriodo } from "@/lib/datetime";
 import { lerSnap, snap } from "@/lib/booking-service";
 import { AGUARDANDO, ATIVOS } from "@/lib/status";
 import { aprovar, cancelarPeloAdmin, rejeitar } from "@/app/(app)/admin/agendamentos/actions";
+import { registrarKm } from "@/app/actions/km";
+import { PERCURSO_ALERTA_KM, percurso, pendenciaKm, referenciasKm, textoPendencia } from "@/lib/km";
 
 /**
  * Dados da solicitação + decisão (aprovar/rejeitar) e gerenciamento.
@@ -24,7 +26,8 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
 
   const decidivel = AGUARDANDO.includes(b.status);
   const alteracao = b.status === "ALTERACAO_PENDENTE";
-  const [vehicles, conflitos] = await Promise.all([
+  const podeKm = b.status === "APROVADO" || b.status === "ALTERACAO_PENDENTE";
+  const [vehicles, conflitos, refKm] = await Promise.all([
     alteracao ? prisma.vehicle.findMany({ select: { id: true, prefixo: true } }) : [],
     decidivel
       ? prisma.booking.findMany({
@@ -32,7 +35,10 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
           include: { user: true },
         })
       : [],
+    podeKm ? referenciasKm(prisma, b) : null,
   ]);
+  const kmPercurso = percurso(b.kmInicial, b.kmFinal);
+  const kmPend = pendenciaKm(b);
   const descreve = (s: ReturnType<typeof snap> | null) =>
     s &&
     `${vehicles.find((v) => v.id === s.vehicleId)?.prefixo ?? "?"} · ${fmtPeriodo({ inicio: new Date(s.inicio), fim: new Date(s.fim) })} · ${s.destino} · ${s.passageiros} pass.${s.motorista ? ` · Motorista: ${s.motorista}` : ""}`;
@@ -47,6 +53,7 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
     ["Motorista", b.motorista ?? "—"],
     ["Passageiros", String(b.passageiros)],
     ["Termo de responsabilidade", b.termoAceitoEm ? `Aceito em ${fmtDateTime(b.termoAceitoEm)}` : "Não registrado"],
+    ["Quilometragem", b.kmInicial === null && b.kmFinal === null ? "Não informada" : `${b.kmInicial?.toLocaleString("pt-BR") ?? "—"} → ${b.kmFinal?.toLocaleString("pt-BR") ?? "—"}${kmPercurso !== null ? ` (${kmPercurso.toLocaleString("pt-BR")} km)` : ""}`],
     ["Status", <StatusBadge key="s" status={b.status} />],
   ];
   if (b.justificativa) linhas.push(["Justificativa", b.justificativa]);
@@ -93,6 +100,44 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
                 <textarea name="justificativa" required minLength={3} maxLength={300} rows={2} className={inputCls} />
               </Field>
               <button className={`mt-2 ${btnPerigoCls}`}>Rejeitar</button>
+            </form>
+          </section>
+        )}
+
+        {podeKm && (
+          <section className={`p-6 ${cardCls}`}>
+            <h2 className="mb-1 font-semibold">Quilometragem</h2>
+            <p className="mb-3 text-xs text-slate-500">
+              Informada pelo solicitante; aqui você pode incluir ou corrigir. Campo em branco apaga o valor. O solicitante é avisado das mudanças.
+            </p>
+            {kmPend && (
+              <p className="mb-3 rounded border-l-4 border-amber-500 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                O solicitante ainda não informou o {textoPendencia(kmPend)}.
+              </p>
+            )}
+            <div className="mb-3 space-y-0.5 text-xs text-slate-600">
+              <div>
+                Último km registrado antes desta reserva:{" "}
+                <b>{refKm?.anterior ? `${refKm.anterior.km.toLocaleString("pt-BR")}` : "nenhum"}</b>
+                {refKm?.anterior && b.kmInicial !== null && b.kmInicial !== refKm.anterior.km && (
+                  <span className="ml-1 text-amber-700">
+                    (diferença de {(b.kmInicial - refKm.anterior.km).toLocaleString("pt-BR")} km até o km inicial informado)
+                  </span>
+                )}
+              </div>
+              {kmPercurso !== null && kmPercurso > PERCURSO_ALERTA_KM && (
+                <div className="text-amber-700">Percurso longo ({kmPercurso.toLocaleString("pt-BR")} km): vale conferir.</div>
+              )}
+            </div>
+            <form action={registrarKm.bind(null, id)} className="flex flex-wrap items-end gap-3">
+              {volta}
+              <Field label="Km inicial">
+                <input name="kmInicial" inputMode="numeric" pattern="[0-9]*" defaultValue={b.kmInicial ?? ""} className={inputCls} />
+              </Field>
+              <Field label="Km final">
+                <input name="kmFinal" inputMode="numeric" pattern="[0-9]*" defaultValue={b.kmFinal ?? ""} className={inputCls} />
+              </Field>
+              <button className={btnGhostCls}>Salvar km</button>
             </form>
           </section>
         )}

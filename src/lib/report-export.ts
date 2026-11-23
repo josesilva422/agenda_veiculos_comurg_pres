@@ -56,6 +56,9 @@ export async function buildXlsx({ rows, truncado, filtrosTxt }: Dados): Promise<
     { header: "Justificativa", key: "just", width: 30 },
     { header: "Decidido por", key: "dec", width: 20 },
     { header: "Motorista", key: "mot", width: 24 },
+    { header: "Km inicial", key: "kmi", width: 11 },
+    { header: "Km final", key: "kmf", width: 11 },
+    { header: "Percurso (km)", key: "perc", width: 13 },
     { header: "Termo aceito em", key: "termo", width: 18, style: { numFmt: "dd/mm/yyyy hh:mm" } },
   ];
   head(wa);
@@ -64,10 +67,11 @@ export async function buildXlsx({ rows, truncado, filtrosTxt }: Dados): Promise<
       nome: r.user.nome, mat: r.user.matricula ?? "", setor: r.user.setor ?? "", pref: r.vehicle.prefixo,
       placa: r.vehicle.placa, contrato: r.vehicle.contrato ?? "", ini: wall(r.inicio), fim: wall(r.fim), dur: h2(horas(r)), dest: r.destino,
       pass: r.passageiros, st: statusInfo[r.status].label, just: r.justificativa ?? "", dec: r.decididoPor?.nome ?? "",
-      mot: r.motorista ?? "", termo: r.termoAceitoEm ? wall(r.termoAceitoEm) : "Não registrado",
+      mot: r.motorista ?? "", kmi: r.kmInicial ?? "", kmf: r.kmFinal ?? "",
+      perc: r.kmInicial !== null && r.kmFinal !== null ? r.kmFinal - r.kmInicial : "", termo: r.termoAceitoEm ? wall(r.termoAceitoEm) : "Não registrado",
     }),
   );
-  wa.autoFilter = { from: "A1", to: "P1" };
+  wa.autoFilter = { from: "A1", to: "S1" };
 
   const aggSheet = (nome: string, col1: string, col2: string, list: Agg[]) => {
     const w = wb.addWorksheet(nome);

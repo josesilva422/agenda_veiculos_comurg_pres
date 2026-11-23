@@ -43,6 +43,17 @@ O horário e o aceite do termo ficam registrados no agendamento.
 O sistema recusa: fim antes do início, início com menos de 30 minutos de antecedência, passageiros acima da lotação,
 veículo indisponível ou já reservado (aprovado) no período. Se houver erro, o pop-up continua aberto com a mensagem e os dados preenchidos.
 
+### Quilometragem (km)
+A cada reserva aprovada, o próprio solicitante informa o **km inicial** (hodômetro na retirada) e o **km final** (na devolução).
+- Em **Meus agendamentos**, use **Informar km** (ou **Editar km**) na reserva. Abre um pop-up; também abre ao clicar na notificação de lembrete.
+- O km inicial pode ser informado assim que a reserva é aprovada; o **km final só depois do início do uso**.
+- O sistema **confere os números** com os registros anteriores do mesmo veículo: o km final não pode ser menor que o inicial, e o hodômetro
+  não pode "andar para trás" em relação ao último km registrado (nem passar do km já registrado na reserva seguinte). Digite só números.
+  Se o sistema recusar um número que você tem certeza que está certo, peça ao administrador para corrigir.
+- Em branco no pop-up mantém o que já estava registrado.
+- **Lembretes:** se o uso já começou e falta o km inicial, ou já terminou e falta o km final, aparece um aviso amarelo no topo de
+  **Meus agendamentos** e chega uma **notificação** (repetida a cada 24 horas enquanto faltar).
+
 ### Editar ou cancelar
 Em **Meus agendamentos** (no celular, um cartão por agendamento), use **Editar** ou **Cancelar** (somente antes do início).
 Editar uma reserva já aprovada gera **Alteração pendente**: o administrador precisa aprovar.
@@ -58,7 +69,8 @@ Seus dados (nome, matrícula, telefone, cargo, lotação, contato, CNH) e a troc
 ## Administrador
 
 ### Painel
-Pendências, veículos em uso, próximos agendamentos e **alertas** de CNH (vencida ou a vencer em 30 dias).
+Pendências, veículos em uso, **reservas sem km**, próximos agendamentos e **alertas** de CNH (vencida ou a vencer em 30 dias).
+A seção **Quilometragem pendente** lista as reservas em que falta o km inicial ou final; **Abrir** leva ao pop-up para o administrador incluir ou cobrar.
 
 ### Aprovar ou rejeitar
 - **Aprovar selecionadas** aprova várias de uma vez. Solicitações com **Conflito** (outra reserva aprovada no mesmo horário) não podem ser aprovadas.
@@ -66,6 +78,9 @@ Pendências, veículos em uso, próximos agendamentos e **alertas** de CNH (venc
   solicitante, veículo, período, motorista, passageiros, **aceite do termo**, conflitos e, nas alterações, o antes e o depois.
   Aprove ou rejeite ali mesmo; rejeitar exige justificativa, que o usuário recebe.
 - Uma alteração rejeitada restaura a reserva aprovada anterior (incluindo o motorista).
+- Em reservas aprovadas, a seção **Quilometragem** mostra o último km registrado do veículo, avisa o que o solicitante ainda não informou e permite
+  **incluir ou corrigir** o km inicial e final (campo em branco apaga). Se alterar o km de outra pessoa, ela recebe uma notificação.
+  Percursos acima de 1.000 km aparecem destacados para conferência.
 - Em reservas ativas, o pop-up também tem **Editar dados** e **Cancelar agendamento** (com motivo opcional; o usuário é avisado).
 
 ### Agendamentos
@@ -92,7 +107,7 @@ Filtros por veículo, solicitante e status, **Novo agendamento** e o pop-up do d
 
 ### Relatórios
 Escolha o período e os filtros (veículo, solicitante, lotação, status). A tela mostra o resumo (total de agendamentos, horas aprovadas e quantidade por status).
-**Exportar Excel** e **Exportar PDF** trazem a lista completa, incluindo **Motorista** e **Termo aceito em** (data e hora do aceite de cada agendamento;
+**Exportar Excel** e **Exportar PDF** trazem a lista completa, incluindo **Motorista**, **Km inicial**, **Km final**, **Percurso (km)** e **Termo aceito em** (data e hora do aceite de cada agendamento;
 "Não registrado" para reservas sem aceite, como as criadas pelo administrador).
 
 ## Dados e privacidade

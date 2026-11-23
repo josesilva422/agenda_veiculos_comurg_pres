@@ -31,6 +31,10 @@ Em vez de `npm run db:pg:deploy`, dá para abrir `prisma/postgres/supabase-sql-e
 (Run, uma vez, em projeto vazio). O arquivo já registra as migrações para o Prisma, então nada mais é necessário.
 Se as migrações mudarem, gere o arquivo de novo com `npm run db:pg:sql`.
 
+**Atualizar um banco que já existe:** cada migração nova, depois da `0003`, sai também em um arquivo próprio em
+`prisma/postgres/atualizacoes/` (por exemplo `0004_km_registro.sql`). Cole-o no SQL Editor e rode **uma vez**; ele já registra a
+migração para o Prisma. Rode os arquivos na ordem dos números, só os que o seu banco ainda não recebeu.
+
 ### 2. Vercel
 1. Importe o repositório. O `vercel.json` já define o comando de build (`npm run vercel-build`) e a região `gru1` (São Paulo).
 2. Em **Settings → Environment Variables**, cadastre:

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { marcarLida, marcarTodasLidas } from "@/app/actions/notificacoes";
 
-type Item = { id: string; mensagem: string; lida: boolean; criadoEm: string; bookingId: string | null };
+type Item = { id: string; tipo: string; mensagem: string; lida: boolean; criadoEm: string; bookingId: string | null };
 
 const quando = (iso: string) =>
   new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
@@ -65,7 +65,11 @@ export default function NotificacoesPopover({
   async function abrirItem(n: Item) {
     setAberto(false);
     if (!n.lida) await marcarLida(n.id);
-    if (n.bookingId) router.push(admin ? `/admin/agendamentos?decidir=${n.bookingId}` : "/usuario/agendamentos");
+    if (!n.bookingId) return;
+    if (admin) router.push(`/admin/agendamentos?decidir=${n.bookingId}`);
+    // lembrete de km: abre direto o pop-up para informar a quilometragem
+    else if (n.tipo.startsWith("KM_")) router.push(`/usuario/agendamentos?km=${n.bookingId}`);
+    else router.push("/usuario/agendamentos");
   }
 
   async function todas() {

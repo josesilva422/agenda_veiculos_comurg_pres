@@ -1,6 +1,6 @@
 -- ============================================================
 -- Agendamento de Veículos — banco completo para o SQL Editor do Supabase
--- Migrações incluídas: 0001_init, 0002_sem_sobreposicao, 0003_rls
+-- Migrações incluídas: 0001_init, 0002_sem_sobreposicao, 0003_rls, 0004_km_registro
 -- Cole tudo e clique em Run. Rode UMA vez, em projeto vazio.
 -- GERADO por scripts/pg-sql-editor.ts (npm run db:pg:sql). Não edite à mão.
 -- ============================================================
@@ -161,6 +161,11 @@ ALTER TABLE "Booking" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Notification" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "LoginTentativa" ENABLE ROW LEVEL SECURITY;
 
+-- ---------- 0004_km_registro ----------
+-- AlterTable
+ALTER TABLE "Booking" ADD COLUMN "kmInicial" INTEGER,
+ADD COLUMN "kmFinal" INTEGER;
+
 -- ---------- registro das migrações (para o Prisma não aplicar de novo) ----------
 CREATE TABLE "_prisma_migrations" (
     "id" VARCHAR(36) PRIMARY KEY NOT NULL,
@@ -177,4 +182,5 @@ ALTER TABLE "_prisma_migrations" ENABLE ROW LEVEL SECURITY;
 INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "migration_name", "applied_steps_count") VALUES
   (gen_random_uuid()::text, '04a6ffe17595c85992865c0882d12a7e37abfac24bb4dbc7cb8557734745b088', now(), '0001_init', 1),
   (gen_random_uuid()::text, 'd0d30381a5047c9b35dadff17cae2a9fca673353875a0eab5125a5f088667de6', now(), '0002_sem_sobreposicao', 1),
-  (gen_random_uuid()::text, '9fd562e798a76e4f5461458f2030e6640dda4fc815755ef6294dfbfad7647106', now(), '0003_rls', 1);
+  (gen_random_uuid()::text, '9fd562e798a76e4f5461458f2030e6640dda4fc815755ef6294dfbfad7647106', now(), '0003_rls', 1),
+  (gen_random_uuid()::text, '53a8973900f7af81b570147aaa175b548f5a37a4cd5c51b0de15289d7c48567f', now(), '0004_km_registro', 1);

@@ -13,7 +13,12 @@ export default async function NotificacoesView({ area }: { area: "admin" | "usua
     where: { userId: u.id, lida: true, criadoEm: { lt: new Date(Date.now() - 30 * 86400_000) } },
   });
   const itens = await prisma.notification.findMany({ where: { userId: u.id }, orderBy: { criadoEm: "desc" }, take: 100 });
-  const link = (bookingId: string) => (area === "admin" ? `/admin/agendamentos/${bookingId}` : "/usuario/agendamentos");
+  const link = (n: { bookingId: string | null; tipo: string }) =>
+    area === "admin"
+      ? `/admin/agendamentos?decidir=${n.bookingId}`
+      : n.tipo.startsWith("KM_")
+        ? `/usuario/agendamentos?km=${n.bookingId}`
+        : "/usuario/agendamentos";
 
   return (
     <div className="max-w-3xl">
@@ -38,7 +43,7 @@ export default async function NotificacoesView({ area }: { area: "admin" | "usua
                 {n.bookingId && (
                   <>
                     {" · "}
-                    <Link href={link(n.bookingId)} className={linkCls}>Abrir</Link>
+                    <Link href={link(n)} className={linkCls}>Abrir</Link>
                   </>
                 )}
               </div>

@@ -1,6 +1,7 @@
 import AppShell, { type Grupo } from "@/components/AppShell";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { gerarLembretesKm } from "@/lib/km-lembretes";
 
 const grupos: Grupo[] = [
   {
@@ -23,6 +24,7 @@ const grupos: Grupo[] = [
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const u = await requireAdmin();
+  await gerarLembretesKm(u.id);
   const naoLidas = await prisma.notification.count({ where: { userId: u.id, lida: false } });
   return (
     <AppShell
