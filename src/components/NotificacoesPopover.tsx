@@ -47,9 +47,14 @@ export default function NotificacoesPopover({
     }
   }
 
+  // abre/fecha o painel; ao abrir, busca as notificações (no clique, e não num efeito)
+  function alternar() {
+    if (!aberto) void carregar();
+    setAberto((v) => !v);
+  }
+
   useEffect(() => {
     if (!aberto) return;
-    carregar();
     const fora = (e: MouseEvent) => {
       if (raiz.current && !raiz.current.contains(e.target as Node)) setAberto(false);
     };
@@ -86,7 +91,7 @@ export default function NotificacoesPopover({
     variante === "topo" ? (
       <button
         type="button"
-        onClick={() => setAberto((v) => !v)}
+        onClick={alternar}
         aria-expanded={aberto}
         aria-haspopup="dialog"
         aria-label={naoLidas > 0 ? `Notificações: ${naoLidas} não lidas` : "Notificações"}
@@ -98,7 +103,7 @@ export default function NotificacoesPopover({
     ) : (
       <button
         type="button"
-        onClick={() => setAberto((v) => !v)}
+        onClick={alternar}
         aria-expanded={aberto}
         aria-haspopup="dialog"
         className={`flex w-full items-center gap-2.5 rounded px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-marca ${

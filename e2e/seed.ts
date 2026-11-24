@@ -3,7 +3,9 @@ import bcrypt from "bcryptjs";
 import { PESSOAS } from "./dados";
 
 // recusa rodar contra qualquer banco que não seja o de testes
-if (process.env.DATABASE_URL !== "file:./e2e.db") throw new Error("Este seed só roda no banco de testes (file:./e2e.db).");
+const url = process.env.DATABASE_URL ?? "";
+const bancoDeTestes = url === "file:./e2e.db" || (process.env.E2E_BANCO === "postgres" && url.includes("127.0.0.1:5433"));
+if (!bancoDeTestes) throw new Error("Este seed só roda no banco de testes (SQLite file:./e2e.db ou o PGlite local da porta 5433).");
 
 const prisma = new PrismaClient();
 

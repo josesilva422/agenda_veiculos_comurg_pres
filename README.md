@@ -6,7 +6,7 @@ Sistema web para solicitação, aprovação e controle de uso de veículos.
 - **Administrador:** aprova/rejeita, vê quem solicita, cadastra usuários e veículos, consulta calendário (dia/semana/mês), relatórios (Excel/PDF) e notificações. O aceite do termo de responsabilidade fica registrado em cada agendamento e consta nos relatórios.
 - **Acesso:** login por e-mail ou matrícula; usuários novos recebem uma senha provisória aleatória, gerada pelo sistema, e trocam no primeiro acesso (8+ caracteres com letra, número e caractere especial).
 
-Stack: Next.js 15 · TypeScript · Prisma + SQLite (desenvolvimento) / PostgreSQL no Supabase (produção) · Auth.js · FullCalendar · Tailwind · app instalável (PWA) · Vercel.
+Stack: Next.js 16 · TypeScript · Prisma + SQLite (desenvolvimento) / PostgreSQL no Supabase (produção) · Auth.js · FullCalendar · Tailwind · app instalável (PWA) · Vercel.
 
 ## Desenvolvimento
 

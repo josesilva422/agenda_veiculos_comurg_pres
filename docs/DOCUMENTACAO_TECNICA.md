@@ -39,7 +39,7 @@ as regras de negócio, a segurança e como evoluir o código. Para uso do sistem
 
 | Camada | Tecnologia |
 |---|---|
-| Aplicação | **Next.js 15** (App Router, Server Actions) e **React 19**, em **TypeScript** |
+| Aplicação | **Next.js 16** (App Router, Server Actions) e **React 19**, em **TypeScript** |
 | Estilo | **Tailwind CSS 4**; cores da Comurg em `src/app/globals.css` |
 | Calendário | **FullCalendar 6** |
 | Banco / acesso | **Prisma 6** — SQLite (desenvolvimento) e PostgreSQL (produção) |
@@ -60,7 +60,7 @@ flowchart LR
     SW["Service worker (PWA)<br/>só arquivos estáticos"]
   end
   subgraph Servidor["Servidor Next.js (Vercel)"]
-    MW["middleware.ts<br/>barra quem não está logado"]
+    MW["proxy.ts<br/>barra quem não está logado"]
     ACT["Server Actions<br/>(actions.ts)"]
     API["Rotas de API<br/>(src/app/api)"]
     LIB["Regras de negócio<br/>(src/lib)"]
@@ -97,7 +97,7 @@ src/
     manifest.ts, icon.tsx    PWA
   components/                Componentes de interface (AppShell, CalendarView, pop-ups, formulários)
   lib/                       Regras de negócio, validação, autenticação, relatórios, datas
-  middleware.ts              Proteção de rotas
+  proxy.ts              Proteção de rotas
   types/                     Tipos auxiliares (next-auth, css)
 ```
 
@@ -190,7 +190,7 @@ Controle do limite de tentativas de login (`chave` = e-mail ou matrícula em min
 - **Sessão verificada no banco:** `getSession()` consulta o usuário a cada requisição (uma consulta, memoizada por requisição). Usuário desativado perde o acesso na hora;
   mudança de perfil e de `trocarSenha` valem imediatamente, sem esperar o JWT expirar. As APIs usam `sessaoApi()`, que também exige a senha provisória já trocada.
 - **Proteção de rotas:**
-  - `middleware.ts` exige login em `/admin/*`, `/usuario/*` e `/trocar-senha`, e leva quem está com senha provisória para `/trocar-senha`.
+  - `proxy.ts` exige login em `/admin/*`, `/usuario/*` e `/trocar-senha`, e leva quem está com senha provisória para `/trocar-senha`.
   - `requireUser()` e `requireAdmin()` repetem a checagem nas páginas, ações e APIs (defesa em profundidade). **Toda Server Action começa com uma delas.**
 - **Quem pode o quê:** o solicitante só vê/edita o que é dele; o administrador gerencia tudo.
 
@@ -379,6 +379,9 @@ Em produção `env.ts` **recusa iniciar** com segredo ausente/curto, sem `NEXTAU
   Cobrem: acesso e permissões, cadastro de usuário e primeiro acesso, solicitar/aprovar/substituir, pedido de alteração, quilometragem, cadastros, relatórios,
   desativação de usuário e o visual no celular (375 px). Os arquivos rodam em ordem (um cria dados que o seguinte usa). Para repetir sem recompilar: `E2E_SEM_BUILD=1 npm run e2e`;
   relatório: `npm run e2e:relatorio`. Na primeira vez é preciso baixar o navegador: `npx playwright install chromium`.
+  Os mesmos testes rodam também contra **PostgreSQL**, como no Supabase: `npm run e2e:pg`. Ele copia o projeto para uma pasta temporária (para não trocar o cliente do Prisma do seu ambiente),
+  instala as dependências lá, cria o banco em um PostgreSQL local sem Docker (PGlite, com o mesmo arquivo SQL que se cola no SQL Editor do Supabase e a conexão no formato do pooler) e roda tipos, lint,
+  testes das regras e a suíte E2E. `npm run e2e:pg -- sqlite` faz o mesmo com SQLite; é a forma de validar uma troca de dependências sem mexer no seu `node_modules`.
 
 ## 16. Limitações conhecidas
 - Notificações apenas **dentro do sistema** (sem e-mail ou WhatsApp); os lembretes de km só são gerados quando o usuário abre o sistema.
@@ -386,6 +389,9 @@ Em produção `env.ts` **recusa iniciar** com segredo ausente/curto, sem `NEXTAU
 - Sem registro de auditoria (quem alterou o quê) — decisão de projeto.
 - Fora da Vercel e sem `TRUST_PROXY=1`, o limite de tentativas não distingue endereços de rede (conta por identificador).
 - Relatório em PDF não traz a quilometragem (o Excel traz).
+- **Dependências:** o `npm audit` ainda aponta 4 avisos de severidade alta, todos na ferramenta de linha de comando do Prisma (`prisma`, `@prisma/config`, `effect`, `deepmerge-ts`), que só roda no
+  desenvolvimento e no build, nunca com o sistema no ar, e sem entrada controlada por terceiros. A correção exige o Prisma 7 (mudança de versão maior, que exige reescrever a conexão com o banco);
+  fica para uma atualização planejada.
 
 ## 17. Como evoluir o sistema
 

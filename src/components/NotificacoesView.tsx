@@ -5,12 +5,15 @@ import { fmtDateTime } from "@/lib/datetime";
 import { marcarLida, marcarTodasLidas } from "@/app/actions/notificacoes";
 import { Titulo, btnGhostCls, cardCls, linkCls } from "./ui";
 
+/** Notificações lidas antes disto são apagadas ao abrir a página (limite de 30 dias). */
+const limiteDeLimpeza = () => new Date(Date.now() - 30 * 86400_000);
+
 /** Página de notificações das duas áreas. No admin o link abre o agendamento; no usuário, a lista dele. */
 export default async function NotificacoesView({ area }: { area: "admin" | "usuario" }) {
   const u = area === "admin" ? await requireAdmin() : await requireUser();
   // economiza espaço: apaga notificações já lidas com mais de 30 dias
   await prisma.notification.deleteMany({
-    where: { userId: u.id, lida: true, criadoEm: { lt: new Date(Date.now() - 30 * 86400_000) } },
+    where: { userId: u.id, lida: true, criadoEm: { lt: limiteDeLimpeza() } },
   });
   const itens = await prisma.notification.findMany({ where: { userId: u.id }, orderBy: { criadoEm: "desc" }, take: 100 });
   const link = (n: { bookingId: string | null; tipo: string }) =>
