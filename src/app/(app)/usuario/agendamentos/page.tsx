@@ -4,16 +4,18 @@ import { requireUser } from "@/lib/auth";
 import NovoAgendamento from "@/components/NovoAgendamento";
 import ModalDecisao from "@/components/ModalDecisao";
 import KmSolicitante from "@/components/KmSolicitante";
+import DetalhesSolicitante from "@/components/DetalhesSolicitante";
 import { StatusBadge, Tabela, Titulo, cardCls, linkCls } from "@/components/ui";
 import { fmtData, fmtDateTime } from "@/lib/datetime";
 import { podeModificar } from "@/lib/booking-rules";
 import { pendenciaKm, textoPendencia } from "@/lib/km";
+import { tipoResumido } from "@/lib/veiculo";
 import { cancelarAgendamento, criarAgendamento } from "./actions";
 
 const BASE = "/usuario/agendamentos";
 
-export default async function MeusAgendamentos({ searchParams }: { searchParams: Promise<{ km?: string }> }) {
-  const { km } = await searchParams;
+export default async function MeusAgendamentos({ searchParams }: { searchParams: Promise<{ km?: string; detalhes?: string }> }) {
+  const { km, detalhes } = await searchParams;
   const u = await requireUser();
   const [lista, vehicles] = await Promise.all([
     prisma.booking.findMany({ where: { userId: u.id }, include: { vehicle: true }, orderBy: { inicio: "desc" } }),
@@ -32,6 +34,7 @@ export default async function MeusAgendamentos({ searchParams }: { searchParams:
   const kmTexto = (b: { kmInicial: number | null; kmFinal: number | null }) =>
     `${b.kmInicial?.toLocaleString("pt-BR") ?? "—"} → ${b.kmFinal?.toLocaleString("pt-BR") ?? "—"}`;
   const abrirKm = (id: string) => `${BASE}?km=${id}`;
+  const abrirDetalhes = (id: string) => `${BASE}?detalhes=${id}`;
 
   return (
     <div>
@@ -64,7 +67,10 @@ export default async function MeusAgendamentos({ searchParams }: { searchParams:
         {lista.map((b) => (
           <li key={b.id} className={`p-3 ${cardCls}`}>
             <div className="flex items-start justify-between gap-2">
-              <div className="font-semibold">{b.vehicle.prefixo}</div>
+              <div className="min-w-0">
+                <div className="font-semibold">{b.vehicle.prefixo}</div>
+                <div className="truncate text-xs text-slate-500">{tipoResumido(b.vehicle.tipo)}</div>
+              </div>
               <StatusBadge status={b.status} />
             </div>
             <div className="mt-1 text-sm tabular-nums text-slate-700">
@@ -81,14 +87,17 @@ export default async function MeusAgendamentos({ searchParams }: { searchParams:
                 </Link>
               </div>
             )}
-            {podeModificar(b.status, b.inicio) && (
-              <div className="mt-2 flex justify-end gap-4 border-t pt-2 text-sm">
-                <Link href={`/usuario/agendamentos/${b.id}`} className={linkCls}>Editar</Link>
-                <form action={cancelarAgendamento.bind(null, b.id)}>
-                  <button className="text-red-600 hover:underline">Cancelar</button>
-                </form>
-              </div>
-            )}
+            <div className="mt-2 flex items-center justify-between gap-4 border-t pt-2 text-sm">
+              <Link href={abrirDetalhes(b.id)} scroll={false} className={linkCls}>Detalhes</Link>
+              {podeModificar(b.status, b.inicio) && (
+                <div className="flex gap-4">
+                  <Link href={`/usuario/agendamentos/${b.id}`} className={linkCls}>Editar</Link>
+                  <form action={cancelarAgendamento.bind(null, b.id)}>
+                    <button className="text-red-600 hover:underline">Cancelar</button>
+                  </form>
+                </div>
+              )}
+            </div>
           </li>
         ))}
       </ul>
@@ -98,7 +107,10 @@ export default async function MeusAgendamentos({ searchParams }: { searchParams:
       <Tabela cols={["Veículo", "Início", "Fim", "Destino", "Km", "Status", ""]} vazio="Você ainda não fez nenhuma solicitação.">
         {lista.map((b) => (
           <tr key={b.id}>
-            <td className="whitespace-nowrap font-medium">{b.vehicle.prefixo}</td>
+            <td>
+              <div className="whitespace-nowrap font-medium">{b.vehicle.prefixo}</div>
+              <div className="text-xs text-slate-500">{tipoResumido(b.vehicle.tipo)}</div>
+            </td>
             <td className="whitespace-nowrap">{fmtDateTime(b.inicio)}</td>
             <td className="whitespace-nowrap">{fmtDateTime(b.fim)}</td>
             <td>{b.destino}</td>
@@ -110,6 +122,7 @@ export default async function MeusAgendamentos({ searchParams }: { searchParams:
               </div>
             </td>
             <td className="flex justify-end gap-3">
+              <Link href={abrirDetalhes(b.id)} scroll={false} className={linkCls}>Detalhes</Link>
               {b.status === "APROVADO" && (
                 <Link href={abrirKm(b.id)} scroll={false} className={linkCls}>
                   {pendenciaKm(b, agora) ? "Informar km" : "Editar km"}
@@ -129,6 +142,11 @@ export default async function MeusAgendamentos({ searchParams }: { searchParams:
       </Tabela>
       </div>
 
+      {detalhes && (
+        <ModalDecisao key={detalhes} param="detalhes" titulo="Detalhes do agendamento">
+          <DetalhesSolicitante id={detalhes} base={BASE} />
+        </ModalDecisao>
+      )}
       {km && (
         <ModalDecisao key={km} param="km" titulo="Quilometragem">
           <KmSolicitante id={km} retorno={BASE} />

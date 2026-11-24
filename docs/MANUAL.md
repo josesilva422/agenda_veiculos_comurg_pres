@@ -54,6 +54,11 @@ A cada reserva aprovada, o próprio solicitante informa o **km inicial** (hodôm
 - **Lembretes:** se o uso já começou e falta o km inicial, ou já terminou e falta o km final, aparece um aviso amarelo no topo de
   **Meus agendamentos** e chega uma **notificação** (repetida a cada 24 horas enquanto faltar).
 
+### Ver os detalhes
+Em **Meus agendamentos**, cada agendamento tem o link **Detalhes**, que abre um pop-up com tudo sobre ele: status, veículo (placa e tipo completo),
+período, destino, motorista, passageiros, quilometragem, aceite do termo, quando foi solicitado, quem decidiu e a justificativa. No pop-up há atalhos para informar o km e para editar.
+Nos cartões o tipo do veículo aparece resumido (por exemplo "Strada Freedom Cabine…"); o nome completo está nos detalhes.
+
 ### Editar ou cancelar
 Em **Meus agendamentos** (no celular, um cartão por agendamento), use **Editar** ou **Cancelar** (somente antes do início).
 Editar uma reserva já aprovada gera **Alteração pendente**: o administrador precisa aprovar.
