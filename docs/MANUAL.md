@@ -114,7 +114,7 @@ Escolha o período e os filtros (veículo, solicitante, lotação, status). A te
 "Não registrado" para reservas sem aceite, como as criadas pelo administrador).
 
 ## Dados e privacidade
-- A tela de login traz o **aviso de privacidade (LGPD)**: os dados pessoais servem apenas ao controle de uso dos veículos da Comurg.
+- A tela de login traz o link **Aviso de privacidade LGPD**, que abre um pop-up: os dados pessoais servem apenas ao controle de uso dos veículos da Comurg.
 - Todos os usuários logados veem o nome do solicitante nas reservas aprovadas do calendário.
 - Senhas são guardadas de forma criptografada; nunca aparecem no sistema.
 - Notificações lidas há mais de 30 dias são apagadas automaticamente.

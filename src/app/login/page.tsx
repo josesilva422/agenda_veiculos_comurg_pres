@@ -6,6 +6,7 @@ import { Field, btnCls, cardCls, inputCls } from "@/components/ui";
 import Image from "next/image";
 import { APP } from "@/lib/config";
 import FaixaComurg from "@/components/FaixaComurg";
+import AvisoPrivacidade from "@/components/AvisoPrivacidade";
 
 function LoginForm() {
   const router = useRouter();
@@ -52,10 +53,7 @@ function LoginForm() {
           {loading ? "Entrando..." : "Entrar"}
         </button>
       </form>
-      <p className="mt-4 text-xs leading-relaxed text-slate-500">
-        Aviso de privacidade (LGPD): os dados pessoais informados neste sistema (nome, matrícula, telefone, cargo, lotação e CNH) são usados
-        apenas para o controle de uso dos veículos da Comurg e ficam acessíveis somente a quem precisa deles para essa finalidade.
-      </p>
+      <AvisoPrivacidade />
     </main>
     </>
   );

@@ -97,11 +97,12 @@ export function Tabela({
 /** Lista "rótulo: valor" usada nas telas de detalhe. */
 export function Dados({ linhas }: { linhas: [string, ReactNode][] }) {
   return (
-    <dl className={`grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 p-5 text-sm ${cardCls}`}>
+    // celular: rótulo em cima e valor embaixo (largura toda); a partir de sm: duas colunas
+    <dl className={`grid grid-cols-1 gap-y-3 p-4 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-6 sm:gap-y-2 sm:p-5 ${cardCls}`}>
       {linhas.map(([k, v]) => (
-        <div key={k} className="contents">
-          <dt className="text-slate-500">{k}</dt>
-          <dd>{v}</dd>
+        <div key={k} className="flex flex-col gap-0.5 sm:contents">
+          <dt className="text-xs text-slate-500 sm:text-sm">{k}</dt>
+          <dd className="min-w-0 break-words">{v}</dd>
         </div>
       ))}
     </dl>
