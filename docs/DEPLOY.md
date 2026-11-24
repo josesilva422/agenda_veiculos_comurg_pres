@@ -48,7 +48,7 @@ mais o horário aprovado; converte as alterações pendentes que existirem e amp
    | `NEXTAUTH_URL` | `https://seu-dominio` |
    | `NEXTAUTH_SECRET` | 48+ caracteres aleatórios (`node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"`) |
 
-3. Faça o deploy. O build gera o cliente PostgreSQL, **aplica as migrações** e compila. Em produção o sistema se recusa a iniciar
+3. Faça o deploy. O build gera o cliente PostgreSQL e compila; **ele não mexe no banco**: as mudanças do banco são aplicadas por você, colando o SQL no SQL Editor do Supabase (veja "Criar as tabelas sem usar comandos" acima). Por isso a `DIRECT_URL` não é usada no build. Em produção o sistema se recusa a iniciar
    se faltar alguma configuração (banco PostgreSQL, Supabase, segredo).
 4. Crie o primeiro administrador (no seu computador, apontando para o banco de produção):
 

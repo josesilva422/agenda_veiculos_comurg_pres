@@ -18,7 +18,7 @@
     "db:pg:sync": "tsx scripts/pg-schema.ts",
     "db:pg:sql": "tsx scripts/pg-sql-editor.ts",
     "db:pg:deploy": "tsx scripts/pg-schema.ts && prisma migrate deploy --schema prisma/postgres/schema.prisma",
-    "vercel-build": "tsx scripts/pg-schema.ts && prisma generate --schema prisma/postgres/schema.prisma && prisma migrate deploy --schema prisma/postgres/schema.prisma && next build",
+    "vercel-build": "tsx scripts/pg-schema.ts && prisma generate --schema prisma/postgres/schema.prisma && next build",
     "admin:create": "tsx scripts/create-admin.ts",
     "backup": "tsx scripts/backup.ts"
   },

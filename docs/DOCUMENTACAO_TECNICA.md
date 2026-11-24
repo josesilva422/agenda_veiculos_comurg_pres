@@ -341,7 +341,7 @@ Em produção `env.ts` **recusa iniciar** com segredo ausente/curto, sem `NEXTAU
 | `db:pg:sync` | Gerar `prisma/postgres/schema.prisma` a partir do schema principal. |
 | `db:pg:sql` | Gerar o SQL para colar no Supabase (e as atualizações em `prisma/postgres/atualizacoes/`). |
 | `db:pg:deploy` | Aplicar as migrações no PostgreSQL. |
-| `vercel-build` | Build da Vercel: gera cliente PostgreSQL, aplica migrações e compila. |
+| `vercel-build` | Build da Vercel: gera cliente PostgreSQL e compila (não mexe no banco; as migrações são aplicadas no SQL Editor do Supabase). |
 | `admin:create` | Criar o primeiro administrador. |
 | `backup` | Backup do SQLite (servidor próprio). |
 
