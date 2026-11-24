@@ -131,7 +131,7 @@ function restaurarRascunho(path: string, tentativa = 0) {
 /** Parâmetros da URL que abrem um pop-up (ModalDecisao e NovoAgendamento), que mostra o erro por conta própria. */
 const PARAMS_POPUP = ["decidir", "novo", "editar", "detalhes", "km"];
 
-const FOCO ="focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-marca";
+const FOCO = "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-marca";
 
 export default function AppShell({
   grupos,
