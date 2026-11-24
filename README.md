@@ -25,6 +25,7 @@ Verificações: `npm test`, `npm run lint`, `npm run build`.
 
 - [Publicação, backup e restauração](docs/DEPLOY.md)
 - [Manual de uso](docs/MANUAL.md)
+- [Documentação técnica](docs/DOCUMENTACAO_TECNICA.md)
 - [Plano de ação original](PLANO_DE_ACAO.md)
 
 ## Scripts
