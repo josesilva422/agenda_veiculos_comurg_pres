@@ -82,6 +82,9 @@ A seção **Quilometragem pendente** lista as reservas em que falta o km inicial
 - **Analisar** (ou **Abrir**, na lista de agendamentos, ou um clique no evento do calendário) abre um **pop-up** com a solicitação:
   solicitante, veículo, período, motorista, passageiros, **aceite do termo**, conflitos e, nas alterações, o antes e o depois.
   Aprove ou rejeite ali mesmo; rejeitar exige justificativa, que o usuário recebe.
+- **Substituir uma reserva aprovada:** quando a solicitação está em conflito, o pop-up mostra a seção **Substituir a reserva aprovada**, com a(s) reserva(s) em conflito.
+  Marque a confirmação, informe um motivo (opcional) e clique em **Cancelar a reserva em conflito e aprovar esta**: a reserva aprovada é cancelada, a nova é aprovada,
+  e os dois solicitantes são avisados por notificação. Tudo acontece de uma vez; se a aprovação não puder ser feita, nenhum cancelamento é mantido.
 - Uma alteração rejeitada restaura a reserva aprovada anterior (incluindo o motorista).
 - Em reservas aprovadas, a seção **Quilometragem** mostra o último km registrado do veículo, avisa o que o solicitante ainda não informou e permite
   **incluir ou corrigir** o km inicial e final (campo em branco apaga). Se alterar o km de outra pessoa, ela recebe uma notificação.

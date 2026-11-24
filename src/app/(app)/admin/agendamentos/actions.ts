@@ -101,6 +101,63 @@ export async function aprovar(id: string, fd?: FormData) {
   voltar(retorno ?? PAINEL, { ok: "Solicitação aprovada." });
 }
 
+/** Erro de regra de negócio dentro de uma transação: desfaz tudo e vira mensagem para o administrador. */
+class ErroNegocio extends Error {}
+
+/**
+ * Cancela a(s) reserva(s) APROVADA(s) que conflitam com a solicitação e aprova a solicitação, tudo numa transação:
+ * se a aprovação falhar por qualquer motivo, nenhum cancelamento é mantido. Os donos das reservas canceladas são avisados.
+ */
+export async function substituirEAprovar(id: string, fd: FormData) {
+  const admin = await requireAdmin();
+  const retorno = retornoSeguro(fd, ORIGENS);
+  const back = retorno ? `${retorno}?decidir=${id}` : `${LISTA}/${id}`;
+  if (fd.get("confirmo") !== "on") voltar(back, { erro: "Marque a confirmação para cancelar a(s) reserva(s) em conflito." });
+  const motivo = String(fd.get("justificativa") ?? "").trim().slice(0, 300) || null;
+
+  let canceladas = 0;
+  const erro = await prisma
+    .$transaction(async (tx): Promise<string | null> => {
+      const b = await tx.booking.findUnique({ where: { id } });
+      if (!b) throw new ErroNegocio("Agendamento não encontrado.");
+      if (!AGUARDANDO.includes(b.status)) throw new ErroNegocio("Esta solicitação já foi decidida.");
+      const conflitos = await tx.booking.findMany({
+        where: { vehicleId: b.vehicleId, status: "APROVADO", id: { not: id }, inicio: { lt: b.fim }, fim: { gt: b.inicio } },
+        include: { vehicle: true },
+      });
+      if (conflitos.length === 0) throw new ErroNegocio("Não há mais reserva em conflito: use Aprovar.");
+      for (const c of conflitos) {
+        await tx.booking.update({
+          where: { id: c.id },
+          data: {
+            status: "CANCELADO",
+            justificativa: motivo ?? "Substituída por outra solicitação aprovada.",
+            decididoPorId: admin.id,
+            decididoEm: new Date(),
+            versaoAnterior: null,
+          },
+        });
+        await notificarUsuario(
+          tx, c.userId, c.id, "CANCELADO",
+          `Sua reserva de ${c.vehicle.prefixo} (${fmtDateTime(c.inicio)} a ${fmtDateTime(c.fim)}) foi cancelada pelo administrador para atender outra solicitação.${motivo ? ` Motivo: ${motivo}` : ""}`,
+        );
+      }
+      canceladas = conflitos.length;
+      const e = await aprovarUma(tx, id, admin.id);
+      if (e) throw new ErroNegocio(e);
+      return null;
+    })
+    .catch((e) => {
+      if (e instanceof ErroNegocio) return e.message;
+      return semSobreposicao(e);
+    });
+  refresh();
+  if (erro) voltar(back, { erro });
+  voltar(retorno ?? PAINEL, {
+    ok: `Solicitação aprovada. ${canceladas === 1 ? "A reserva em conflito foi cancelada" : `${canceladas} reservas em conflito foram canceladas`} e o solicitante foi avisado.`,
+  });
+}
+
 export async function aprovarLote(fd: FormData) {
   const admin = await requireAdmin();
   const ids = fd.getAll("ids").map(String);

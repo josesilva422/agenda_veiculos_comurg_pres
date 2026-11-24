@@ -219,6 +219,7 @@ As regras 1–5 rodam dentro de uma **transação** e valem também para a ediç
 ### 7.3 Aprovação e rejeição
 - Aprovar confere de novo veículo ativo, período ainda não encerrado e conflito. Pode ser feita **em lote** no painel.
 - Rejeitar exige justificativa. Se for uma **alteração**, a reserva volta à `versaoAnterior`; se o horário original já foi ocupado, o sistema orienta a cancelar.
+- **Substituição por conflito** (`substituirEAprovar`): numa única transação, cancela as reservas `APROVADO` que conflitam (notificando os donos) e aprova a solicitação; qualquer falha desfaz tudo.
 - Agendamento criado pelo administrador "em nome de" alguém nasce **aprovado** e notifica o usuário (sem aceite de termo).
 - Em PostgreSQL, uma restrição do banco impede duas aprovações simultâneas no mesmo horário; o sistema traduz o erro em mensagem de conflito.
 

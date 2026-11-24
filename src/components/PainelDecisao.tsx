@@ -5,7 +5,7 @@ import { Dados, Field, StatusBadge, btnCls, btnGhostCls, btnPerigoCls, cardCls, 
 import { fmtDateTime, fmtPeriodo } from "@/lib/datetime";
 import { lerSnap, snap } from "@/lib/booking-service";
 import { AGUARDANDO, ATIVOS } from "@/lib/status";
-import { aprovar, cancelarPeloAdmin, rejeitar } from "@/app/(app)/admin/agendamentos/actions";
+import { aprovar, cancelarPeloAdmin, rejeitar, substituirEAprovar } from "@/app/(app)/admin/agendamentos/actions";
 import { registrarKm } from "@/app/actions/km";
 import { PERCURSO_ALERTA_KM, percurso, pendenciaKm, referenciasKm, textoPendencia } from "@/lib/km";
 
@@ -81,6 +81,39 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
             </ul>
             Não é possível aprovar enquanto o conflito existir.
           </div>
+        )}
+
+        {decidivel && conflitos.length > 0 && (
+          <section className={`space-y-3 border-red-200 p-6 ${cardCls}`}>
+            <div>
+              <h2 className="font-semibold">Substituir a reserva aprovada</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Cancela {conflitos.length === 1 ? "a reserva aprovada em conflito" : `as ${conflitos.length} reservas aprovadas em conflito`} e aprova esta solicitação no lugar.
+                Quem teve a reserva cancelada é avisado por notificação.
+              </p>
+              <ul className="mt-2 list-disc space-y-0.5 pl-5 text-sm text-slate-800">
+                {conflitos.map((c) => (
+                  <li key={c.id}>
+                    <b>{c.user.nome}</b>: {fmtPeriodo(c)}
+                    {c.inicio <= new Date() && <span className="ml-1 text-red-700">(já em andamento)</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <form action={substituirEAprovar.bind(null, id)} className="space-y-3">
+              {volta}
+              <Field label="Motivo informado a quem perde a reserva (opcional)">
+                <input name="justificativa" maxLength={300} className={inputCls} />
+              </Field>
+              <label className="flex items-start gap-2 text-sm text-slate-700">
+                <input name="confirmo" type="checkbox" required className="mt-0.5 h-4 w-4 shrink-0 accent-red-700" />
+                <span>Confirmo o cancelamento {conflitos.length === 1 ? "da reserva" : "das reservas"} acima.</span>
+              </label>
+              <button className={btnPerigoCls}>
+                Cancelar {conflitos.length === 1 ? "a reserva" : "as reservas"} em conflito e aprovar esta
+              </button>
+            </form>
+          </section>
         )}
 
         {decidivel && (
