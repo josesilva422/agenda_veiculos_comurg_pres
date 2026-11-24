@@ -4,13 +4,14 @@ import { Field, btnCls, inputCls } from "@/components/ui";
 import { fmtPeriodo } from "@/lib/datetime";
 import { pendenciaKm, percurso, referenciasKm, textoPendencia } from "@/lib/km";
 import { registrarKm } from "@/app/actions/km";
+import { OCUPAM } from "@/lib/status";
 
 /** Conteúdo do pop-up em que o solicitante informa o km inicial e final de uma reserva dele. */
 export default async function KmSolicitante({ id, retorno }: { id: string; retorno: string }) {
   const u = await requireUser();
   const b = await prisma.booking.findUnique({ where: { id }, include: { vehicle: true } });
   if (!b || b.userId !== u.id) return <p className="text-sm text-slate-600">Agendamento não encontrado.</p>;
-  if (b.status !== "APROVADO") {
+  if (!OCUPAM.includes(b.status)) {
     return <p className="text-sm text-slate-600">A quilometragem só é registrada em reservas aprovadas.</p>;
   }
 

@@ -34,6 +34,8 @@ Se as migrações mudarem, gere o arquivo de novo com `npm run db:pg:sql`.
 **Atualizar um banco que já existe:** cada migração nova, depois da `0003`, sai também em um arquivo próprio em
 `prisma/postgres/atualizacoes/` (por exemplo `0004_km_registro.sql`). Cole-o no SQL Editor e rode **uma vez**; ele já registra a
 migração para o Prisma. Rode os arquivos na ordem dos números, só os que o seu banco ainda não recebeu.
+Pendentes até agora: `0004_km_registro.sql` (quilometragem) e `0005_alteracao_mantem_reserva.sql` (pedido de alteração não libera
+mais o horário aprovado; converte as alterações pendentes que existirem e amplia a trava de horário).
 
 ### 2. Vercel
 1. Importe o repositório. O `vercel.json` já define o comando de build (`npm run vercel-build`) e a região `gru1` (São Paulo).
@@ -45,14 +47,13 @@ migração para o Prisma. Rode os arquivos na ordem dos números, só os que o s
    | `DIRECT_URL` | conexão 5432 do Supabase |
    | `NEXTAUTH_URL` | `https://seu-dominio` |
    | `NEXTAUTH_SECRET` | 48+ caracteres aleatórios (`node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"`) |
-   | `SENHA_PADRAO` | opcional (padrão `Comurg@2026`) |
 
 3. Faça o deploy. O build gera o cliente PostgreSQL, **aplica as migrações** e compila. Em produção o sistema se recusa a iniciar
    se faltar alguma configuração (banco PostgreSQL, Supabase, segredo).
 4. Crie o primeiro administrador (no seu computador, apontando para o banco de produção):
 
    ```bash
-   DATABASE_URL="<conexão 5432>" DIRECT_URL="<conexão 5432>" ADMIN_NAME="Fulano" ADMIN_EMAIL=fulano@empresa.com ADMIN_PASSWORD='senha-forte-10+' \
+   DATABASE_URL="<conexão 5432>" DIRECT_URL="<conexão 5432>" ADMIN_NAME="Fulano" ADMIN_EMAIL=fulano@empresa.com ADMIN_PASSWORD='Senha-Forte-2026' \
      npx tsx scripts/create-admin.ts
    ```
 
@@ -168,5 +169,5 @@ Faça um teste de restauração antes de depender do backup.
 
 ## Limitações conhecidas
 
-- Sem envio de e-mail nem "esqueci a senha": o admin usa "Redefinir para a senha padrão" na edição do usuário.
+- Sem envio de e-mail nem "esqueci a senha": o admin usa "Gerar nova senha provisória" na edição do usuário.
 - Notificações apenas dentro do sistema.

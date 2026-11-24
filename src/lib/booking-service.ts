@@ -2,6 +2,7 @@ import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { parseLocalBr, fmtDateTime } from "./datetime";
 import { validateWindow } from "./booking-rules";
+import { OCUPAM } from "./status";
 
 export type Tx = Prisma.TransactionClient;
 export type Result = { erro: string } | { id: string };
@@ -32,7 +33,7 @@ export const bookingSchema = z.object({
 /** Os cinco campos que o solicitante preenche; é o que vai para o banco. */
 export type BookingInput = z.output<typeof bookingSchema>;
 
-/** Cópia dos dados da reserva, guardada em `versaoAnterior` enquanto há alteração pendente. */
+/** Os dados de uma versão da reserva, em JSON (usado para o pedido de alteração). */
 export const snap = (b: BookingInput) => ({
   vehicleId: b.vehicleId,
   inicio: b.inicio.toISOString(),
@@ -42,12 +43,30 @@ export const snap = (b: BookingInput) => ({
   motorista: b.motorista ?? null,
 });
 
-export function lerSnap(json: string | null): ReturnType<typeof snap> | null {
+export type Versao = ReturnType<typeof snap>;
+
+export function lerSnap(json: string | null): Versao | null {
   try {
     return json ? JSON.parse(json) : null;
   } catch {
     return null;
   }
+}
+
+/**
+ * Pedido de alteração de uma reserva aprovada. Enquanto o administrador não decide, a reserva continua com os
+ * dados aprovados (e segura o veículo) e o pedido fica em JSON no campo `versaoAnterior` (nome antigo do campo).
+ */
+export function lerAlteracao(b: { status: string; versaoAnterior: string | null }) {
+  if (b.status !== "ALTERACAO_PENDENTE") return null;
+  const v = lerSnap(b.versaoAnterior);
+  return v ? { ...v, inicio: new Date(v.inicio), fim: new Date(v.fim), motorista: v.motorista ?? null } : null;
+}
+
+/** Veículo e período que o administrador está decidindo: o do pedido de alteração, se houver; senão, o da própria reserva. */
+export function periodoEmDecisao<T extends { status: string; versaoAnterior: string | null; vehicleId: string; inicio: Date; fim: Date }>(b: T) {
+  const alt = lerAlteracao(b);
+  return alt ? { vehicleId: alt.vehicleId, inicio: alt.inicio, fim: alt.fim } : { vehicleId: b.vehicleId, inicio: b.inicio, fim: b.fim };
 }
 
 export async function notificarAdmins(tx: Tx, bookingId: string, tipo: string, mensagem: string) {
@@ -62,12 +81,12 @@ export async function notificarUsuario(tx: Tx, userId: string, bookingId: string
   await tx.notification.create({ data: { userId, tipo, mensagem, bookingId } });
 }
 
-/** Aprovado que se sobrepõe à janela (opcionalmente ignorando uma reserva). */
+/** Reserva que segura o veículo (aprovada, com ou sem pedido de alteração) e se sobrepõe à janela, opcionalmente ignorando uma. */
 export function conflitoAprovado(tx: Tx, vehicleId: string, inicio: Date, fim: Date, excludeId?: string) {
   return tx.booking.findFirst({
     where: {
       vehicleId,
-      status: "APROVADO",
+      status: { in: OCUPAM },
       inicio: { lt: fim },
       fim: { gt: inicio },
       ...(excludeId ? { id: { not: excludeId } } : {}),
@@ -75,17 +94,21 @@ export function conflitoAprovado(tx: Tx, vehicleId: string, inicio: Date, fim: D
   });
 }
 
-/** Regras de negócio comuns a criação e edição. Retorna mensagem de erro ou null. */
+/**
+ * Regras de negócio comuns a criação e edição. Retorna mensagem de erro ou null.
+ * `porAdmin`: o administrador pode lançar uso já em andamento ou passado (sem a antecedência mínima).
+ */
 export async function validarRegras(
   tx: Tx,
   userId: string,
   d: BookingInput,
   excludeId?: string,
+  porAdmin = false,
 ): Promise<string | null> {
   const user = await tx.user.findUnique({ where: { id: userId }, select: { ativo: true } });
   if (!user || !user.ativo) return "Usuário inativo.";
 
-  const janela = validateWindow(d.inicio, d.fim);
+  const janela = porAdmin ? validateWindow(d.inicio, d.fim, new Date(), null) : validateWindow(d.inicio, d.fim);
   if (janela) return janela;
 
   const veiculo = await tx.vehicle.findUnique({ where: { id: d.vehicleId } });
@@ -100,7 +123,7 @@ export async function validarRegras(
   return null;
 }
 
-/** Mensagem mostrada quando o próprio banco (PostgreSQL) recusa duas reservas aprovadas no mesmo horário. */
+/** Mensagem mostrada quando o próprio banco (PostgreSQL) recusa duas reservas que seguram o veículo no mesmo horário. */
 export const MSG_SOBREPOSICAO = "Conflito: outra reserva aprovada acabou de ocupar este veículo nesse horário.";
 
 /** A regra "booking_no_overlap" do PostgreSQL disparou (duas aprovações ao mesmo tempo). */

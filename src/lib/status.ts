@@ -17,6 +17,11 @@ export const STATUS = Object.keys(statusInfo) as BookingStatus[];
 export const AGUARDANDO: BookingStatus[] = ["PENDENTE", "ALTERACAO_PENDENTE"];
 /** Ainda ocupam (ou podem ocupar) o veículo. */
 export const ATIVOS: BookingStatus[] = [...AGUARDANDO, "APROVADO"];
+/**
+ * Reservas que seguram o veículo: as aprovadas e as aprovadas com um pedido de alteração aguardando
+ * (a versão aprovada continua valendo até o administrador decidir; o pedido fica guardado à parte).
+ */
+export const OCUPAM: BookingStatus[] = ["APROVADO", "ALTERACAO_PENDENTE"];
 export const ehStatus = (v: unknown): v is BookingStatus => STATUS.includes(v as BookingStatus);
 
 /** Cor das reservas de terceiros no calendário do usuário. */

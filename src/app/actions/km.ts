@@ -6,6 +6,7 @@ import { retornoSeguro, voltar } from "@/lib/action";
 import { fmtDateTime } from "@/lib/datetime";
 import { referenciasKm, validarKm } from "@/lib/km";
 import { notificarUsuario } from "@/lib/booking-service";
+import { OCUPAM } from "@/lib/status";
 
 const ORIGENS = ["/usuario/agendamentos", "/admin", "/admin/agendamentos", "/admin/calendario"];
 
@@ -33,7 +34,7 @@ export async function registrarKm(id: string, fd: FormData) {
 
   const b = await prisma.booking.findUnique({ where: { id }, include: { vehicle: true } });
   if (!b || (!admin && b.userId !== u.id)) voltar(fim, { erro: "Agendamento não encontrado." });
-  if (admin ? !["APROVADO", "ALTERACAO_PENDENTE"].includes(b.status) : b.status !== "APROVADO") {
+  if (!OCUPAM.includes(b.status)) {
     voltar(fim, { erro: "A quilometragem só é registrada em reservas aprovadas." });
   }
 

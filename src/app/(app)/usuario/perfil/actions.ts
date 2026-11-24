@@ -2,6 +2,7 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { voltar } from "@/lib/action";
 import { validarSenhaForte } from "@/lib/senha";
 
@@ -20,5 +21,6 @@ export async function alterarSenha(fd: FormData) {
   const user = await prisma.user.findUnique({ where: { id: u.id } });
   if (!user || !(await bcrypt.compare(atual, user.senhaHash))) voltar(PERFIL, { erro: "Senha atual incorreta." });
   await prisma.user.update({ where: { id: u.id }, data: { senhaHash: await bcrypt.hash(nova, 10), trocarSenha: false } });
-  voltar(PERFIL, { ok: "Senha alterada." });
+  // a senha nova encerra todas as sessões, inclusive esta: entra de novo com a senha nova
+  redirect("/login?trocada=1");
 }

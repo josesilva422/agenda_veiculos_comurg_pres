@@ -4,7 +4,7 @@ Sistema web para solicitação, aprovação e controle de uso de veículos.
 
 - **Usuário:** escolhe veículo, data e horário (e informa o motorista, se quiser); concorda com o Termo de Responsabilidade; edita ou cancela a própria solicitação; vê o calendário de ocupação.
 - **Administrador:** aprova/rejeita, vê quem solicita, cadastra usuários e veículos, consulta calendário (dia/semana/mês), relatórios (Excel/PDF) e notificações. O aceite do termo de responsabilidade fica registrado em cada agendamento e consta nos relatórios.
-- **Acesso:** login por e-mail ou matrícula; usuários novos entram com a senha padrão (`SENHA_PADRAO`, padrão `Comurg@2026`) e trocam no primeiro acesso (8+ caracteres com letra, número e caractere especial).
+- **Acesso:** login por e-mail ou matrícula; usuários novos recebem uma senha provisória aleatória, gerada pelo sistema, e trocam no primeiro acesso (8+ caracteres com letra, número e caractere especial).
 
 Stack: Next.js 15 · TypeScript · Prisma + SQLite (desenvolvimento) / PostgreSQL no Supabase (produção) · Auth.js · FullCalendar · Tailwind · app instalável (PWA) · Vercel.
 

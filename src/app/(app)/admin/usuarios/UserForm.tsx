@@ -2,14 +2,13 @@ import Link from "next/link";
 import type { User } from "@prisma/client";
 import { Field, btnCls, btnGhostCls, cardCls, inputCls } from "@/components/ui";
 import { toInputDate } from "@/lib/datetime";
-import { REGRAS_SENHA, SENHA_PADRAO } from "@/lib/senha";
+import { REGRAS_SENHA } from "@/lib/senha";
 
 export default function UserForm({
   action,
   user,
   retorno,
   semCartao = false,
-  senhaInfo,
 }: {
   action: (fd: FormData) => Promise<void>;
   user?: User;
@@ -17,8 +16,6 @@ export default function UserForm({
   retorno?: string;
   /** Sem borda nem espaçamento próprios (já dentro de um pop-up). */
   semCartao?: boolean;
-  /** Edição: situação da senha (primeiro acesso pendente? ainda é a senha padrão?). */
-  senhaInfo?: { primeiroAcesso: boolean; padrao: boolean };
 }) {
   return (
     <form action={action} className={`grid gap-4 sm:grid-cols-2 ${semCartao ? "" : `max-w-2xl p-6 ${cardCls}`}`}>
@@ -47,19 +44,6 @@ export default function UserForm({
       <Field label="Lotação">
         <input name="setor" required defaultValue={user?.setor ?? ""} className={inputCls} />
       </Field>
-      <Field label={user ? "Nova senha (só para redefinir)" : "Senha inicial"}>
-        <input
-          name="senha"
-          type="text"
-          autoComplete="off"
-          defaultValue={user ? "" : SENHA_PADRAO}
-          placeholder={user ? "Em branco: mantém a atual" : undefined}
-          className={inputCls}
-        />
-        <span className="mt-1 block text-xs text-slate-500">
-          {user ? "Ao preencher, o usuário troca a senha no próximo acesso." : "Senha padrão do sistema; pode alterar."}
-        </span>
-      </Field>
       <Field label="Contato (ramal, celular ou e-mail alternativo)" className="sm:col-span-2">
         <input name="contato" required defaultValue={user?.contato ?? ""} className={inputCls} />
       </Field>
@@ -69,21 +53,10 @@ export default function UserForm({
       <Field label="Validade da CNH (opcional)">
         <input name="cnhValidade" type="date" defaultValue={toInputDate(user?.cnhValidade)} className={inputCls} />
       </Field>
-      {user && senhaInfo?.primeiroAcesso && (
-        <p className="rounded border-l-4 border-amber-500 bg-amber-50 px-3 py-2 text-sm text-amber-900 sm:col-span-2">
-          {senhaInfo.padrao ? (
-            <>
-              Primeiro acesso pendente: a senha atual é a <b>senha padrão</b> — <b className="select-all tabular-nums">{SENHA_PADRAO}</b>
-            </>
-          ) : (
-            <>Primeiro acesso pendente: a senha foi definida pelo administrador e será trocada no primeiro login.</>
-          )}
-        </p>
-      )}
       <p className="rounded bg-slate-50 p-2 text-xs text-slate-600 sm:col-span-2">
         {user
           ? "O login é feito com e-mail ou matrícula. "
-          : "No primeiro acesso o usuário é obrigado a trocar a senha. O login pode ser feito com o e-mail ou com a matrícula. "}
+          : "Ao salvar, o sistema gera uma senha provisória só deste usuário e a mostra na tela. No primeiro acesso ele é obrigado a trocá-la. O login pode ser feito com o e-mail ou com a matrícula. "}
         Regra da senha: {REGRAS_SENHA.toLowerCase()}
       </p>
       <div className="flex gap-2 sm:col-span-2">

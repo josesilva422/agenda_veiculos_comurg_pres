@@ -8,14 +8,18 @@ export function overlaps(a: { inicio: Date; fim: Date }, b: { inicio: Date; fim:
   return a.inicio < b.fim && b.inicio < a.fim;
 }
 
+/**
+ * Confere início, fim e duração. `minAntecedenciaMin` = null dispensa a antecedência e permite datas passadas
+ * (lançamentos do administrador: uso em andamento ou que já aconteceu).
+ */
 export function validateWindow(
   inicio: Date,
   fim: Date,
   agora = new Date(),
-  minAntecedenciaMin = MIN_ANTECEDENCIA_MIN,
+  minAntecedenciaMin: number | null = MIN_ANTECEDENCIA_MIN,
 ): string | null {
   if (fim <= inicio) return "O fim deve ser posterior ao início.";
-  if (inicio.getTime() < agora.getTime() + minAntecedenciaMin * 60_000) {
+  if (minAntecedenciaMin !== null && inicio.getTime() < agora.getTime() + minAntecedenciaMin * 60_000) {
     return minAntecedenciaMin > 0
       ? `O início deve ter ao menos ${minAntecedenciaMin} minutos de antecedência.`
       : "O início não pode estar no passado.";

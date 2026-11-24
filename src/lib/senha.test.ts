@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SENHA_PADRAO, validarSenhaForte } from "./senha";
+import { gerarSenhaProvisoria, validarSenhaForte, versaoSenha } from "./senha";
 
 describe("validarSenhaForte", () => {
   it("aceita senha com letra, número, especial e 8+ caracteres", () => {
@@ -16,8 +16,22 @@ describe("validarSenhaForte", () => {
     expect(validarSenhaForte("Abcdefg@")).toMatch(/número/);
     expect(validarSenhaForte("Abcdefg12")).toMatch(/especial/);
   });
+});
 
-  it("a senha padrão cumpre a própria regra", () => {
-    expect(validarSenhaForte(SENHA_PADRAO)).toBeNull();
+describe("gerarSenhaProvisoria", () => {
+  it("cumpre a regra da senha e muda a cada chamada", () => {
+    const senhas = Array.from({ length: 50 }, gerarSenhaProvisoria);
+    for (const s of senhas) {
+      expect(s).toMatch(/^[A-Za-z]{4}-[2-9]{4}-[A-Za-z]{4}$/);
+      expect(validarSenhaForte(s)).toBeNull();
+    }
+    expect(new Set(senhas).size).toBe(senhas.length);
+  });
+});
+
+describe("versaoSenha", () => {
+  it("é estável para a mesma senha e muda quando a senha muda", () => {
+    expect(versaoSenha("hash-a")).toBe(versaoSenha("hash-a"));
+    expect(versaoSenha("hash-a")).not.toBe(versaoSenha("hash-b"));
   });
 });

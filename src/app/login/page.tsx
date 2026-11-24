@@ -23,6 +23,7 @@ function LoginForm() {
     const res = await signIn("credentials", { login, password, redirect: false });
     setLoading(false);
     if (res?.error === "BLOQUEADO") setErro("Muitas tentativas. Aguarde 15 minutos e tente novamente.");
+    else if (res?.error === "SENHA_EXPIRADA") setErro("Esta senha provisória não vale mais. Peça ao administrador uma nova senha provisória.");
     else if (res?.error) setErro("E-mail/matrícula ou senha inválidos.");
     else router.push("/");
   }

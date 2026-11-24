@@ -111,7 +111,7 @@ Os grupos `(app)` não aparecem na URL: `src/app/(app)/admin/usuarios` responde 
 | `booking-service.ts` | Esquema de validação do agendamento (`bookingSchema`), `validarRegras`, conflito com reservas aprovadas, notificações. |
 | `km.ts`, `km-lembretes.ts` | Quilometragem: validação, referências do veículo, pendências e lembretes. |
 | `auth.ts` | Configuração do login, `getSession` (confere o usuário no banco), `requireUser`/`requireAdmin`. |
-| `senha.ts`, `rate-limit.ts` | Regra da senha, senha padrão, limite de tentativas de login. |
+| `senha.ts`, `rate-limit.ts` | Regra da senha, senha provisória aleatória, versão da senha (sessões), limite de tentativas de login. |
 | `validation.ts` | Esquemas zod de usuário e veículo. |
 | `action.ts` | Utilitários das Server Actions (`validar`, `voltar`, `retornoSeguro`). |
 | `datetime.ts` | Conversões de fuso (Brasília ↔ UTC) e formatação. |
@@ -144,7 +144,7 @@ erDiagram
 | `cnh`, `cnhValidade` | Opcionais; apenas informativos (o painel não mostra mais alertas de vencimento). |
 | `role` | `ADMIN` ou `USER`. |
 | `ativo` | `false` bloqueia o acesso na hora (sem apagar histórico). |
-| `trocarSenha` | `true` enquanto usa a senha padrão: força a troca no primeiro acesso. |
+| `trocarSenha` | `true` enquanto usa a senha provisória: força a troca no primeiro acesso. |
 
 ### `Vehicle`
 `prefixo` (único), `placa` (única), `tipo`, `lotacao`, `contrato` (opcional), `status` (`ATIVO`, `MANUTENCAO`, `INATIVO`), `observacao`.
@@ -160,7 +160,7 @@ Só veículos `ATIVO` aceitam solicitações.
 | `termoAceitoEm` | Data/hora do aceite do Termo de Responsabilidade ao criar. |
 | `status` | `PENDENTE`, `APROVADO`, `REJEITADO`, `CANCELADO`, `ALTERACAO_PENDENTE`. |
 | `decididoPorId`, `decididoEm`, `justificativa` | Quem decidiu, quando e o motivo (obrigatório ao rejeitar). |
-| `versaoAnterior` | JSON da última versão aprovada, guardado só enquanto há alteração pendente (para desfazer se rejeitada). |
+| `versaoAnterior` | JSON do **pedido de alteração** (só com status `ALTERACAO_PENDENTE`). A reserva continua com os dados aprovados até a decisão. O nome do campo vem do formato antigo, em que o JSON guardava a versão aprovada (convertido pela migração `0005`). |
 
 Índices: `(vehicleId, inicio, fim)`, `status`, `inicio`, `userId`.
 
@@ -177,14 +177,21 @@ Controle do limite de tentativas de login (`chave` = e-mail ou matrícula em min
 ## 6. Autenticação e permissões
 
 - **Login** (`src/lib/auth.ts`): campo único "e-mail ou matrícula" (contém `@` → e-mail; senão → matrícula) e senha. Provedor de credenciais do Auth.js, sessão **JWT de 8 horas**.
-- **Limite de tentativas:** 5 erros em 15 minutos bloqueiam o identificador (tabela `LoginTentativa`).
-- **Senha:** mínimo de 8 caracteres, com letra, número e caractere especial (`senha.ts`). Senha padrão `Comurg@2026` (variável `SENHA_PADRAO`).
-- **Primeiro acesso:** o administrador cria o usuário com a senha padrão (ou outra provisória) e `trocarSenha = true`. O usuário só consegue abrir `/trocar-senha`
-  até criar a própria senha; em seguida é deslogado e entra de novo.
+- **Limite de tentativas** (tabela `LoginTentativa`): 5 erros em 15 minutos bloqueiam aquela conta **para aquela origem (IP)**, e 100 erros em
+  15 minutos, em quaisquer contas, bloqueiam a origem. Assim ninguém de fora trava a conta de outra pessoa, nem testa uma senha em muitas matrículas.
+  O IP só é lido do cabeçalho `x-forwarded-for` na Vercel ou com `TRUST_PROXY=1` (atrás de um proxy próprio); fora disso o cabeçalho poderia ser forjado.
+- **Senha:** mínimo de 8 caracteres, com letra, número e caractere especial (`senha.ts`).
+- **Primeiro acesso:** ao cadastrar (ou em "Gerar nova senha provisória"), o sistema cria uma **senha provisória aleatória** por usuário e `trocarSenha = true`.
+  O texto vai para a tela do administrador num cookie `httpOnly` de 2 minutos (nunca na URL nem em texto no banco). O usuário só consegue abrir
+  `/trocar-senha` até criar a própria senha; a ação confere que o primeiro acesso está mesmo pendente. Em seguida é deslogado e entra de novo.
+- **Senha padrão antiga:** contas que ainda estão com a antiga senha padrão (`Comurg@2026` ou a variável `SENHA_PADRAO`) não entram mais com ela;
+  o administrador vê um aviso na edição do usuário e gera uma senha provisória.
+- **Troca de senha encerra as sessões:** o token guarda a "versão da senha" (`versaoSenha`, um resumo do código da senha). Quando a senha muda,
+  as sessões abertas com a senha anterior deixam de valer na próxima requisição.
 - **Sessão verificada no banco:** `getSession()` consulta o usuário a cada requisição (uma consulta, memoizada por requisição). Usuário desativado perde o acesso na hora;
-  mudança de perfil e de `trocarSenha` valem imediatamente, sem esperar o JWT expirar.
+  mudança de perfil e de `trocarSenha` valem imediatamente, sem esperar o JWT expirar. As APIs usam `sessaoApi()`, que também exige a senha provisória já trocada.
 - **Proteção de rotas:**
-  - `middleware.ts` exige login em `/admin/*`, `/usuario/*` e `/trocar-senha`, e leva quem está com senha padrão para `/trocar-senha`.
+  - `middleware.ts` exige login em `/admin/*`, `/usuario/*` e `/trocar-senha`, e leva quem está com senha provisória para `/trocar-senha`.
   - `requireUser()` e `requireAdmin()` repetem a checagem nas páginas, ações e APIs (defesa em profundidade). **Toda Server Action começa com uma delas.**
 - **Quem pode o quê:** o solicitante só vê/edita o que é dele; o administrador gerencia tudo.
 
@@ -200,7 +207,7 @@ stateDiagram-v2
   PENDENTE --> REJEITADO: rejeitar (com justificativa)
   PENDENTE --> CANCELADO: cancelar
   APROVADO --> ALTERACAO_PENDENTE: solicitante edita
-  ALTERACAO_PENDENTE --> APROVADO: aprovar alteração / rejeitar (volta ao original)
+  ALTERACAO_PENDENTE --> APROVADO: aprovar (aplica o pedido) / rejeitar (descarta o pedido)
   APROVADO --> CANCELADO: cancelar
   ALTERACAO_PENDENTE --> CANCELADO: cancelar
 ```
@@ -208,23 +215,29 @@ stateDiagram-v2
 ### 7.2 Criar uma solicitação (`validarRegras`)
 1. Usuário ativo.
 2. Fim depois do início; início com **pelo menos 30 minutos de antecedência** (`MIN_ANTECEDENCIA_MIN`); duração máxima de **7 dias**.
+   O administrador (criar ou editar em nome de alguém) não tem a antecedência: pode lançar uso em andamento ou passado (`validarRegras(..., porAdmin)`).
 3. Veículo existente e `ATIVO`.
 4. Passageiros **≤ lotação** do veículo.
-5. **Sem conflito** com reserva *aprovada* do mesmo veículo no período (reservas pendentes não bloqueiam; encostar fim/início é permitido).
+5. **Sem conflito** com reserva que segura o veículo (`OCUPAM`: `APROVADO` e `ALTERACAO_PENDENTE`) no período (reservas pendentes não bloqueiam; encostar fim/início é permitido).
 6. O solicitante precisa marcar o aceite do Termo (`aceiteTermo`); o carimbo vai para `termoAceitoEm`.
 
 As regras 1–5 rodam dentro de uma **transação** e valem também para a edição e para o agendamento criado pelo administrador.
 
 ### 7.3 Aprovação e rejeição
 - Aprovar confere de novo veículo ativo, período ainda não encerrado e conflito. Pode ser feita **em lote** no painel.
-- Rejeitar exige justificativa. Se for uma **alteração**, a reserva volta à `versaoAnterior`; se o horário original já foi ocupado, o sistema orienta a cancelar.
-- **Substituição por conflito** (`substituirEAprovar`): numa única transação, cancela as reservas `APROVADO` que conflitam (notificando os donos) e aprova a solicitação; qualquer falha desfaz tudo.
-- Agendamento criado pelo administrador "em nome de" alguém nasce **aprovado** e notifica o usuário (sem aceite de termo).
-- Em PostgreSQL, uma restrição do banco impede duas aprovações simultâneas no mesmo horário; o sistema traduz o erro em mensagem de conflito.
+- Rejeitar exige justificativa. Se for uma **alteração**, só descarta o pedido (a reserva já está com os dados aprovados).
+- Aprovar uma **alteração** confere o veículo e o período **pedidos** (`periodoEmDecisao`) e copia o pedido para a reserva.
+- **Substituição por conflito** (`substituirEAprovar`): numa única transação, cancela as reservas que seguram o veículo e conflitam (notificando os donos) e aprova a solicitação; qualquer falha desfaz tudo.
+- Agendamento criado pelo administrador "em nome de" alguém nasce **aprovado** e notifica o usuário. Não registra aceite do termo: pressupõe-se que o usuário já aceitou.
+- Em PostgreSQL, uma restrição do banco (`booking_no_overlap`, sobre `APROVADO` e `ALTERACAO_PENDENTE`) impede duas reservas no mesmo horário; o sistema traduz o erro em mensagem de conflito.
 
 ### 7.4 Edição e cancelamento pelo solicitante
-Só reservas ativas que **ainda não começaram** (`podeModificar`). Editar uma reserva `APROVADO` gera `ALTERACAO_PENDENTE` e guarda a versão aprovada em `versaoAnterior`.
-Os administradores são notificados.
+Só reservas ativas que **ainda não começaram** (`podeModificar`). Editar uma reserva `PENDENTE` altera a própria solicitação.
+Editar uma reserva `APROVADO` gera `ALTERACAO_PENDENTE` e grava o **pedido** em `versaoAnterior`, sem mexer nos dados aprovados, que continuam segurando o veículo.
+Editar de novo ajusta o pedido; voltar aos dados aprovados retira o pedido. Os administradores são notificados.
+
+### 7.4.1 Desativar usuário
+Bloqueia o acesso na hora e, na mesma transação, cancela as reservas ativas dele que ainda não começaram (as em andamento continuam). Reativar não devolve as canceladas.
 
 ### 7.5 Quilometragem (`km.ts`, `src/app/actions/km.ts`)
 - O solicitante informa km inicial (a partir da aprovação) e km final (só depois do início do uso). O **km inicial vem sugerido** com o km final da última reserva do veículo (editável).
@@ -261,7 +274,7 @@ Páginas antigas de página inteira (`.../novo`, `.../[id]`) continuam existindo
 | Rota | Método | Função |
 |---|---|---|
 | `/api/auth/*` | — | Auth.js (login, sessão, logout). |
-| `/api/calendario` | GET | Eventos do calendário no período (máx. 100 dias, 1.000 eventos). Administrador vê todas as ativas (e filtra por status/solicitante); solicitante vê as aprovadas e as próprias pendentes. |
+| `/api/calendario` | GET | Eventos do calendário no período (máx. 100 dias, 1.000 eventos). Administrador vê todas as ativas (e filtra por status/solicitante); solicitante vê as aprovadas (com ou sem pedido de alteração) e as próprias pendentes. As de outras pessoas vêm marcadas `deOutro`: na grade só a faixa de cor, o nome só na visão Lista. |
 | `/api/notificacoes` | GET | Últimas 15 notificações do usuário (sino). |
 | `/api/relatorios/[formato]` | GET | `xlsx` ou `pdf` (somente administrador). |
 | `/api/health` | GET | Verificação de saúde (`{"status":"ok"}`, ou 503). |
@@ -312,7 +325,8 @@ O service worker **só guarda arquivos estáticos**; páginas e dados nunca fica
 | `DIRECT_URL` | Só produção: conexão direta (porta 5432) usada nas migrações. |
 | `NEXTAUTH_URL` | Endereço público (com `https://` em produção). |
 | `NEXTAUTH_SECRET` | Segredo da sessão, 32+ caracteres. |
-| `SENHA_PADRAO` | Opcional; padrão `Comurg@2026`. |
+| `SENHA_PADRAO` | Opcional; só serve para reconhecer e recusar a antiga senha padrão (padrão `Comurg@2026`). |
+| `TRUST_PROXY` | Opcional; `1` quando o sistema roda atrás de um proxy reverso próprio que define `x-forwarded-for` (na Vercel não precisa). |
 | `MIN_ANTECEDENCIA_MIN` | Opcional; padrão 30. |
 | `BACKUP_DIR`, `BACKUP_KEEP_DAYS` | Opcionais; backup do SQLite em servidor próprio. |
 
@@ -367,7 +381,7 @@ Em produção `env.ts` **recusa iniciar** com segredo ausente/curto, sem `NEXTAU
 - Notificações apenas **dentro do sistema** (sem e-mail ou WhatsApp); os lembretes de km só são gerados quando o usuário abre o sistema.
 - Sem "esqueci a senha" por e-mail: o administrador usa "Redefinir senha".
 - Sem registro de auditoria (quem alterou o quê) — decisão de projeto.
-- O limite de tentativas de login é por identificador (e-mail/matrícula), não por endereço de rede.
+- Fora da Vercel e sem `TRUST_PROXY=1`, o limite de tentativas não distingue endereços de rede (conta por identificador).
 - Relatório em PDF não traz a quilometragem (o Excel traz).
 
 ## 17. Como evoluir o sistema

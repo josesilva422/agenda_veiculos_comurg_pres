@@ -54,7 +54,7 @@ export default async function AgendamentosAdmin({ searchParams }: { searchParams
   const [lista, porStatus, vehicles, users] = await Promise.all([
     prisma.booking.findMany({
       where: { ...periodo, status: filtro },
-      include: { user: true, vehicle: true },
+      include: { user: { select: { nome: true } }, vehicle: { select: { prefixo: true } } },
       orderBy: { inicio: de ? "asc" : "desc" },
       take: LIMITE,
     }),

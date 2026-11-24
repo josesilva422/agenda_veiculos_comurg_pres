@@ -60,7 +60,11 @@ export async function buscarAgendamentos(f: Filtros) {
   };
   const rows = await prisma.booking.findMany({
     where,
-    include: { user: true, vehicle: true, decididoPor: true },
+    include: {
+      user: { select: { nome: true, matricula: true, setor: true } },
+      vehicle: true,
+      decididoPor: { select: { nome: true } },
+    },
     orderBy: { inicio: "asc" },
     take: MAX_LINHAS + 1,
   });

@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { fmtData } from "./datetime";
 import { pendenciaKm, textoPendencia } from "./km";
+import { OCUPAM } from "./status";
 
 const DIA_MS = 86400_000;
 /** Só lembra de reservas recentes (as muito antigas ficam apenas na lista de pendências). */
@@ -20,7 +21,7 @@ export async function gerarLembretesKm(userId: string): Promise<void> {
   const reservas = await prisma.booking.findMany({
     where: {
       userId,
-      status: "APROVADO",
+      status: { in: OCUPAM },
       inicio: { lte: agora },
       fim: { gte: new Date(agora.getTime() - JANELA_DIAS * DIA_MS) },
       OR: [{ kmInicial: null }, { kmFinal: null, fim: { lte: agora } }],

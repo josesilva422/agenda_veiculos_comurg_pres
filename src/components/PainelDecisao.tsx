@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Dados, Field, StatusBadge, btnCls, btnGhostCls, btnPerigoCls, cardCls, inputCls } from "./ui";
 import { fmtDateTime, fmtPeriodo } from "@/lib/datetime";
-import { lerSnap, snap } from "@/lib/booking-service";
-import { AGUARDANDO, ATIVOS } from "@/lib/status";
+import { lerAlteracao, periodoEmDecisao } from "@/lib/booking-service";
+import { AGUARDANDO, ATIVOS, OCUPAM } from "@/lib/status";
 import { aprovar, cancelarPeloAdmin, rejeitar, substituirEAprovar } from "@/app/(app)/admin/agendamentos/actions";
 import { registrarKm } from "@/app/actions/km";
 import { PERCURSO_ALERTA_KM, percurso, pendenciaKm, referenciasKm, textoPendencia } from "@/lib/km";
@@ -17,7 +17,11 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
   const volta = retorno ? <input type="hidden" name="retorno" value={retorno} /> : null;
   const b = await prisma.booking.findUnique({
     where: { id },
-    include: { user: true, vehicle: true, decididoPor: true },
+    include: {
+      user: { select: { nome: true, setor: true, email: true, telefone: true } },
+      vehicle: true,
+      decididoPor: { select: { nome: true } },
+    },
   });
   if (!b) {
     if (!retorno) notFound();
@@ -26,23 +30,25 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
 
   const decidivel = AGUARDANDO.includes(b.status);
   const alteracao = b.status === "ALTERACAO_PENDENTE";
-  const podeKm = b.status === "APROVADO" || b.status === "ALTERACAO_PENDENTE";
+  const podeKm = OCUPAM.includes(b.status);
+  // pedido de alteração: os conflitos são conferidos no veículo e período pedidos
+  const p = periodoEmDecisao(b);
   const [vehicles, conflitos, refKm] = await Promise.all([
     alteracao ? prisma.vehicle.findMany({ select: { id: true, prefixo: true } }) : [],
     decidivel
       ? prisma.booking.findMany({
-          where: { vehicleId: b.vehicleId, status: "APROVADO", id: { not: b.id }, inicio: { lt: b.fim }, fim: { gt: b.inicio } },
-          include: { user: true },
+          where: { vehicleId: p.vehicleId, status: { in: OCUPAM }, id: { not: b.id }, inicio: { lt: p.fim }, fim: { gt: p.inicio } },
+          include: { user: { select: { nome: true } } },
         })
       : [],
     podeKm ? referenciasKm(prisma, b) : null,
   ]);
   const kmPercurso = percurso(b.kmInicial, b.kmFinal);
   const kmPend = pendenciaKm(b);
-  const descreve = (s: ReturnType<typeof snap> | null) =>
-    s &&
-    `${vehicles.find((v) => v.id === s.vehicleId)?.prefixo ?? "?"} · ${fmtPeriodo({ inicio: new Date(s.inicio), fim: new Date(s.fim) })} · ${s.destino} · ${s.passageiros} pass.${s.motorista ? ` · Motorista: ${s.motorista}` : ""}`;
-  const antes = alteracao ? descreve(lerSnap(b.versaoAnterior)) : null;
+  type V = { vehicleId: string; inicio: Date; fim: Date; destino: string; passageiros: number; motorista: string | null };
+  const descreve = (s: V) =>
+    `${vehicles.find((v) => v.id === s.vehicleId)?.prefixo ?? "?"} · ${fmtPeriodo(s)} · ${s.destino} · ${s.passageiros} pass.${s.motorista ? ` · Motorista: ${s.motorista}` : ""}`;
+  const pedido = lerAlteracao(b);
 
   const linhas: [string, React.ReactNode][] = [
     ["Solicitante", `${b.user.nome} (${b.user.setor ?? b.user.email})`],
@@ -63,23 +69,23 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
     <div className="space-y-6">
         <Dados linhas={linhas} />
 
-        {antes && (
+        {pedido && (
           <div className="rounded-md border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
             <div className="mb-1 font-semibold">Alteração solicitada pelo usuário</div>
-            <div>Antes (aprovado): {antes}</div>
-            <div>Agora (solicitado): {descreve(snap(b))}</div>
+            <div>Aprovado (continua valendo até a decisão): {descreve(b)}</div>
+            <div>Pedido: {descreve(pedido)}</div>
           </div>
         )}
 
         {conflitos.length > 0 && (
           <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-            Conflito com reserva(s) já aprovada(s) neste veículo:
+            {alteracao ? "O pedido de alteração conflita" : "Conflito"} com reserva(s) já aprovada(s) neste veículo:
             <ul className="ml-4 list-disc">
               {conflitos.map((c) => (
                 <li key={c.id}>{c.user.nome}: {fmtPeriodo(c)}</li>
               ))}
             </ul>
-            Não é possível aprovar enquanto o conflito existir.
+            Para aprovar, use a opção de cancelar a reserva em conflito, abaixo.
           </div>
         )}
 

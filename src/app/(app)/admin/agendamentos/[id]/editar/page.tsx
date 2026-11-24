@@ -7,7 +7,7 @@ import { editarPeloAdmin } from "../../actions";
 
 export default async function EditarAgendamentoAdmin({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const b = await prisma.booking.findUnique({ where: { id }, include: { user: true } });
+  const b = await prisma.booking.findUnique({ where: { id }, include: { user: { select: { nome: true } } } });
   if (!b) notFound();
   if (!ATIVOS.includes(b.status)) redirect(`/admin/agendamentos/${id}`);
   // mantém o veículo atual na lista mesmo se deixou de estar ativo

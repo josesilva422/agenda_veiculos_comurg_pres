@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getSession } from "@/lib/auth";
+import { sessaoApi } from "@/lib/auth";
 import { carregarRelatorio, lerFiltros } from "@/lib/reports";
 import { buildPdf, buildXlsx } from "@/lib/report-export";
 
@@ -11,7 +11,7 @@ const TIPOS = {
 } as const;
 
 export async function GET(req: NextRequest, ctx: { params: Promise<{ formato: string }> }) {
-  const session = await getSession();
+  const session = await sessaoApi();
   if (!session?.user) return new NextResponse("Não autenticado", { status: 401 });
   if (session.user.role !== "ADMIN") return new NextResponse("Acesso negado", { status: 403 });
 

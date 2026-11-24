@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { OCUPAM, type BookingStatus } from "./status";
 
 /** Quilometragem (hodômetro) registrada a cada agendamento: regras de validação e consultas. */
 
@@ -54,7 +55,7 @@ export function pendenciaKm(
   b: { status: string; inicio: Date; fim: Date; kmInicial: number | null; kmFinal: number | null },
   agora = new Date(),
 ): { inicial: boolean; final: boolean } | null {
-  if (b.status !== "APROVADO") return null;
+  if (!OCUPAM.includes(b.status as BookingStatus)) return null;
   const inicial = b.kmInicial === null && b.inicio <= agora;
   const final = b.kmFinal === null && b.fim <= agora;
   return inicial || final ? { inicial, final } : null;
@@ -74,12 +75,12 @@ export async function referenciasKm(
   const comKm = { OR: [{ kmInicial: { not: null } }, { kmFinal: { not: null } }] };
   const [ant, prox] = await Promise.all([
     db.booking.findFirst({
-      where: { vehicleId: b.vehicleId, status: "APROVADO", id: { not: b.id }, inicio: { lt: b.inicio }, ...comKm },
+      where: { vehicleId: b.vehicleId, status: { in: OCUPAM }, id: { not: b.id }, inicio: { lt: b.inicio }, ...comKm },
       orderBy: { inicio: "desc" },
       select: { inicio: true, kmInicial: true, kmFinal: true },
     }),
     db.booking.findFirst({
-      where: { vehicleId: b.vehicleId, status: "APROVADO", id: { not: b.id }, inicio: { gt: b.inicio }, ...comKm },
+      where: { vehicleId: b.vehicleId, status: { in: OCUPAM }, id: { not: b.id }, inicio: { gt: b.inicio }, ...comKm },
       orderBy: { inicio: "asc" },
       select: { inicio: true, kmInicial: true, kmFinal: true },
     }),

@@ -88,7 +88,8 @@ model Booking {
   decididoPor   User?         @relation("Decisor", fields: [decididoPorId], references: [id])
   decididoEm    DateTime?
   justificativa String?
-  // JSON da última versão aprovada, guardado só enquanto há uma alteração pendente
+  // JSON do pedido de alteração (status ALTERACAO_PENDENTE). A reserva continua com os dados aprovados até o
+  // administrador decidir. (O nome do campo ficou do formato antigo, em que o JSON guardava a versão aprovada.)
   versaoAnterior String?
   criadoEm      DateTime      @default(now())
   atualizadoEm  DateTime      @updatedAt

@@ -4,10 +4,11 @@
 
 ### Entrar
 - Informe **e-mail ou matrícula** e a senha. Após 5 tentativas erradas, aguarde 15 minutos.
-- **Primeiro acesso:** quem acabou de ser cadastrado entra com a **senha padrão** (informada pelo administrador). O sistema abre a tela
+- **Primeiro acesso:** quem acabou de ser cadastrado entra com a **senha provisória** que o administrador entregou (cada pessoa recebe uma diferente). O sistema abre a tela
   **"Crie sua senha de acesso"** e só libera o uso depois da troca. Em seguida, entre de novo com a senha nova.
-- **Regra da senha** (LGPD): mínimo de **8 caracteres**, com **letra, número e caractere especial**; não pode ser a senha padrão.
-- Esqueceu a senha? Peça ao administrador para **redefinir para a senha padrão**; no próximo acesso você cria uma nova.
+- **Regra da senha** (LGPD): mínimo de **8 caracteres**, com **letra, número e caractere especial**; não pode ser igual à senha provisória.
+- Esqueceu a senha? Peça ao administrador uma **nova senha provisória**; no próximo acesso você cria uma nova.
+- Ao trocar a senha (no primeiro acesso ou em **Meu perfil**), o sistema encerra as sessões abertas em outros aparelhos e pede para entrar de novo.
 - Se o seu cadastro for **desativado**, o acesso é encerrado imediatamente.
 
 ### Notificações (sino)
@@ -19,6 +20,8 @@ Esc ou um clique fora fecha o painel.
 - Visões de mês, semana, dia e lista (no celular: mês, dia e lista).
 - **Filtros:** veículo (placa e tipo) e, para o administrador, solicitante e status. **Limpar filtros** volta tudo ao padrão.
 - **Clique em um dia** (ou em "+n") para abrir a lista de agendamentos daquele dia: horário, veículo, solicitante e status.
+  Para o usuário comum, as reservas de outras pessoas aparecem no mês, na semana, no dia e nesse pop-up só como faixa de cor ("Reservado");
+  o **nome de quem reservou aparece apenas na visão Lista**.
   Nesse pop-up há o botão **Novo agendamento neste dia**.
 - Nas visões de semana e dia, **arraste em um horário livre** para solicitar já com início e fim preenchidos.
 - No celular, as marcações do mês aparecem como barras coloridas; os detalhes ficam no pop-up do dia.
@@ -61,11 +64,12 @@ Nos cartões o tipo do veículo aparece resumido (por exemplo "Strada Freedom Ca
 
 ### Editar ou cancelar
 Em **Meus agendamentos** (no celular, um cartão por agendamento), use **Editar** ou **Cancelar** (somente antes do início).
-Editar uma reserva já aprovada gera **Alteração pendente**: o administrador precisa aprovar.
-Se ele rejeitar a alteração, a reserva original continua valendo.
+Editar uma reserva já aprovada gera um **pedido de alteração** (status "Alteração pendente"), que o administrador precisa aprovar.
+**Enquanto ele não decide, a reserva aprovada continua valendo** e o veículo continua garantido no horário original.
+Se ele aprovar, a reserva passa para os dados novos; se rejeitar, nada muda. Editar de novo ajusta o pedido, e voltar aos dados aprovados retira o pedido.
 
 ### Cores no calendário
-Laranja: sua solicitação pendente · Azul: sua alteração pendente · Verde: sua reserva aprovada · Cinza: ocupado por outra pessoa.
+Laranja: sua solicitação pendente · Azul: sua reserva com alteração pendente (aparece no horário aprovado) · Verde: sua reserva aprovada · Cinza: ocupado por outra pessoa.
 
 ### Meu perfil
 Seus dados (nome, matrícula, telefone, cargo, lotação, contato, CNH) e a troca de senha
@@ -85,15 +89,18 @@ A seção **Quilometragem pendente** lista as reservas em que falta o km inicial
 ### Aprovar ou rejeitar
 - **Aprovar selecionadas** aprova várias de uma vez. Solicitações com **Conflito** (outra reserva aprovada no mesmo horário) não podem ser aprovadas.
 - **Analisar** (ou **Abrir**, na lista de agendamentos, ou um clique no evento do calendário) abre um **pop-up** com a solicitação:
-  solicitante, veículo, período, motorista, passageiros, **aceite do termo**, conflitos e, nas alterações, o antes e o depois.
+  solicitante, veículo, período, motorista, passageiros, **aceite do termo**, conflitos e, nas alterações, o aprovado (que continua valendo) e o pedido.
+  Nas alterações, os conflitos são conferidos no veículo e no período pedidos.
   Aprove ou rejeite ali mesmo; rejeitar exige justificativa, que o usuário recebe.
 - **Cancelar solicitação aprovada (substituição):** quando a solicitação está em conflito, o pop-up mostra a seção **Cancelar solicitação aprovada**, com o usuário que será notificado
   (nome e período). Marque a confirmação, escreva o **motivo da substituição** e clique em **Cancelar a reserva em conflito e aprovar esta**: a reserva aprovada é cancelada, a nova é aprovada,
   e os dois solicitantes são avisados por notificação. Tudo acontece de uma vez; se a aprovação não puder ser feita, nenhum cancelamento é mantido.
-- Uma alteração rejeitada restaura a reserva aprovada anterior (incluindo o motorista).
+- Rejeitar uma alteração apenas descarta o pedido: a reserva aprovada continua como estava.
 - Em reservas aprovadas, a seção **Quilometragem** mostra o último km registrado do veículo, avisa o que o solicitante ainda não informou e permite
   **incluir ou corrigir** o km inicial e final (campo em branco apaga). Se alterar o km de outra pessoa, ela recebe uma notificação.
   Percursos acima de 1.000 km aparecem destacados para conferência.
+- O administrador pode criar ou editar agendamentos **já em andamento ou que já aconteceram** (por exemplo, uma saída que não foi agendada,
+  ou estender uma reserva em uso): a antecedência mínima de 30 minutos vale só para os solicitantes. O conflito de horário continua sendo conferido.
 - Em reservas ativas, o pop-up também tem **Editar dados** e, nas já aprovadas, **Cancelar agendamento** (com motivo opcional; o usuário é avisado).
 
 ### Agendamentos
@@ -106,12 +113,13 @@ A seção **Quilometragem pendente** lista as reservas em que falta o km inicial
 ### Usuários
 - **Novo usuário** e **Editar** abrem pop-ups. Campos obrigatórios: nome completo, e-mail, perfil, **matrícula** (única), telefone, cargo, **lotação** e contato.
   **CNH e validade são opcionais.**
-- O campo **Senha inicial** (ao lado da Lotação) já vem com a **senha padrão** do sistema; pode ser trocada por outra que siga a regra da senha.
-  O usuário é obrigado a trocá-la no primeiro acesso. Informe a senha a ele.
-- Na edição, se o usuário **ainda não fez o primeiro acesso**, um aviso amarelo mostra a senha padrão (ou informa que a senha foi definida pelo administrador).
-  O campo **Nova senha (só para redefinir)** define uma nova senha provisória; em branco, mantém a atual. Também vale o botão **Redefinir para a senha padrão**.
-- Na edição, **Redefinir para a senha padrão** volta a senha (para quem esqueceu); ele troca no próximo acesso. Não vale para a própria conta (use Meu perfil).
-- **Desativar** impede o acesso na hora, sem apagar o histórico. **Reativar** devolve o acesso.
+- Ao salvar um usuário novo, o sistema **gera uma senha provisória só dele** (ex.: `Hqtz-4829-Mwbe`) e a mostra em verde no pop-up.
+  **Anote e entregue ao usuário na hora:** ela fica visível só por 2 minutos e não pode ser consultada depois. No primeiro acesso ele cria a própria senha.
+- Esqueceu a senha? Na edição, **Gerar nova senha provisória** cria outra, mostrada do mesmo jeito; as sessões abertas do usuário são encerradas.
+  Não vale para a própria conta (use Meu perfil).
+- Se aparecer o aviso **"ainda está com a antiga senha padrão"**, gere uma senha provisória: a antiga senha padrão não é mais aceita no login.
+- **Desativar** (pede confirmação) impede o acesso na hora, sem apagar o histórico, e **cancela as reservas dele que ainda não começaram**,
+  liberando os veículos. As que já estão em andamento continuam. **Reativar** devolve o acesso, mas não as reservas canceladas.
 - O termo de responsabilidade não é anexado ao usuário: o **aceite eletrônico** é feito pelo próprio solicitante a cada agendamento e fica registrado nele.
 
 ### Veículos
@@ -128,6 +136,6 @@ Escolha o período e os filtros (veículo, solicitante, lotação, status). A te
 
 ## Dados e privacidade
 - A tela de login traz o link **Aviso de privacidade LGPD**, que abre um pop-up: os dados pessoais servem apenas ao controle de uso dos veículos da Comurg.
-- Todos os usuários logados veem o nome do solicitante nas reservas aprovadas do calendário.
+- No calendário, o usuário comum só vê o nome de quem reservou na visão **Lista**; nas demais visões, as reservas de outras pessoas aparecem só como faixa de cor.
 - Senhas são guardadas de forma criptografada; nunca aparecem no sistema.
 - Notificações lidas há mais de 30 dias são apagadas automaticamente.

@@ -1,15 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { Prisma } from "@prisma/client";
-import { getSession } from "@/lib/auth";
+import { sessaoApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { fromWall, toWallIso } from "@/lib/datetime";
 import { podeModificar } from "@/lib/booking-rules";
-import { AGUARDANDO, ATIVOS, COR_OCUPADO, ehStatus, statusInfo } from "@/lib/status";
+import { ATIVOS, COR_OCUPADO, OCUPAM, ehStatus, statusInfo } from "@/lib/status";
 
 const MAX_DIAS = 100;
 
 export async function GET(req: NextRequest) {
-  const session = await getSession();
+  const session = await sessaoApi();
   if (!session?.user) return NextResponse.json({ erro: "Não autenticado" }, { status: 401 });
   const { id: meuId, role } = session.user;
 
@@ -40,10 +40,11 @@ export async function GET(req: NextRequest) {
     if (userId) where.userId = userId;
     where.status = ehStatus(statusParam) ? statusParam : { in: ATIVOS };
   } else {
-    // usuário: vê o que está ocupado (sem dados de terceiros) e as próprias solicitações ativas
+    // usuário: vê o que está ocupado e as próprias solicitações ativas. O nome de quem reservou só aparece
+    // na visão "Lista"; na grade do calendário a reserva de outra pessoa é só a faixa de cor (veja CalendarView)
     where.OR = [
-      { status: "APROVADO" },
-      { userId: meuId, status: { in: AGUARDANDO } },
+      { status: { in: OCUPAM } },
+      { userId: meuId, status: "PENDENTE" },
     ];
   }
 
@@ -75,7 +76,8 @@ export async function GET(req: NextRequest) {
       end: toWallIso(b.fim),
       backgroundColor: cor,
       borderColor: cor,
-      extendedProps: { status: b.status, meu, url },
+      // `deOutro`: reserva de outra pessoa vista por um usuário comum (sem nome fora da visão "Lista")
+      extendedProps: { status: b.status, meu, url, deOutro: !admin && !meu },
     };
   });
 

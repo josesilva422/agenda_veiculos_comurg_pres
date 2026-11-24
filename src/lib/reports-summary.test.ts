@@ -35,6 +35,12 @@ describe("summarize", () => {
     expect(s.porUsuario[0]).toMatchObject({ nome: "Bia", total: 2, canceladas: 1, aprovadas: 1, detalhe: "—" });
   });
 
+  it("reserva aprovada com pedido de alteração continua contando como aprovada", () => {
+    const s = summarize([row({}), row({ status: "ALTERACAO_PENDENTE" })]);
+    expect(s.horasAprovadas).toBe(5);
+    expect(s.porVeiculo[0]).toMatchObject({ aprovadas: 2 });
+  });
+
   it("lista vazia", () => {
     const s = summarize([]);
     expect(s.total).toBe(0);

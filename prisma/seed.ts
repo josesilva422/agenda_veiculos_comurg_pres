@@ -1,9 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { somenteDesenvolvimento } from "../scripts/so-desenvolvimento";
 
 const prisma = new PrismaClient();
 
 async function main() {
+  somenteDesenvolvimento("prisma/seed.ts");
   const senha = await bcrypt.hash("admin123", 10);
   await prisma.user.upsert({
     where: { email: "admin@exemplo.com" },

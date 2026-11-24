@@ -4,7 +4,8 @@ import { Badge, Stat, Stats, Tabela, Titulo, btnCls, cardCls, linkCls } from "@/
 import { fmtData, fmtPeriodo, parseLocalBr, toInputDateTime } from "@/lib/datetime";
 import { overlaps } from "@/lib/booking-rules";
 import { pendenciaKm, textoPendencia } from "@/lib/km";
-import { AGUARDANDO, COR } from "@/lib/status";
+import { AGUARDANDO, COR, OCUPAM } from "@/lib/status";
+import { lerAlteracao } from "@/lib/booking-service";
 import DecidirAgendamento from "@/components/DecidirAgendamento";
 import { aprovarLote } from "./agendamentos/actions";
 
@@ -16,7 +17,7 @@ async function calcularConflitos(pendentes: { id: string; vehicleId: string; ini
   if (pendentes.length === 0) return [] as number[];
   const aprovadas = await prisma.booking.findMany({
     where: {
-      status: "APROVADO",
+      status: { in: OCUPAM },
       vehicleId: { in: [...new Set(pendentes.map((p) => p.vehicleId))] },
       inicio: { lt: new Date(Math.max(...pendentes.map((p) => p.fim.getTime()))) },
       fim: { gt: new Date(Math.min(...pendentes.map((p) => p.inicio.getTime()))) },
@@ -34,14 +35,14 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
   const fila = { status: { in: AGUARDANDO } };
   // mês corrente em horário de Brasília: do dia 1, 00:00, até agora
   const inicioMes = parseLocalBr(`${toInputDateTime(agora).slice(0, 7)}-01T00:00`) ?? agora;
-  const concluidosMes = { status: "APROVADO" as const, fim: { gte: inicioMes, lte: agora } };
-  const aConcluir = { status: "APROVADO" as const, fim: { gt: agora } };
+  const concluidosMes = { status: { in: OCUPAM }, fim: { gte: inicioMes, lte: agora } };
+  const aConcluir = { status: { in: OCUPAM }, fim: { gt: agora } };
   const resumo = { id: true, inicio: true, fim: true, user: { select: { nome: true } }, vehicle: { select: { prefixo: true } } };
   const [pendentes, totalPendentes, totalConcluidos, concluidos, totalAConcluir, aprovadosAConcluir, kmCandidatas] = await Promise.all([
     prisma.booking.findMany({
       where: fila,
       select: {
-        id: true, vehicleId: true, inicio: true, fim: true, destino: true, status: true,
+        id: true, vehicleId: true, inicio: true, fim: true, destino: true, status: true, versaoAnterior: true,
         user: { select: { nome: true, setor: true, email: true } },
         vehicle: { select: { prefixo: true } },
       },
@@ -55,7 +56,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
     prisma.booking.findMany({ where: aConcluir, select: resumo, orderBy: { inicio: "asc" }, take: LIMITE_LISTA }),
     // reservas aprovadas em que o uso já começou e falta algum km (confirmado em memória por pendenciaKm)
     prisma.booking.findMany({
-      where: { status: "APROVADO", inicio: { lte: agora }, OR: [{ kmInicial: null }, { kmFinal: null, fim: { lte: agora } }] },
+      where: { status: { in: OCUPAM }, inicio: { lte: agora }, OR: [{ kmInicial: null }, { kmFinal: null, fim: { lte: agora } }] },
       select: {
         id: true, status: true, inicio: true, fim: true, kmInicial: true, kmFinal: true,
         user: { select: { nome: true, setor: true } },
@@ -72,7 +73,13 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
   const hojeBr = toInputDateTime(agora).slice(0, 10);
   const linkConcluidos = `/admin/agendamentos?${new URLSearchParams({ status: "APROVADO", de: `${hojeBr.slice(0, 7)}-01`, ate: hojeBr })}`;
   const linkAConcluir = `/admin/agendamentos?${new URLSearchParams({ status: "APROVADO", de: hojeBr })}`;
-  const conflitos = await calcularConflitos(pendentes);
+  // pedido de alteração: mostra e confere o que foi pedido (veículo e período), não a reserva aprovada
+  const emDecisao = pendentes.map((b) => ({ ...b, ...(lerAlteracao(b) ?? {}) }));
+  const conflitos = await calcularConflitos(emDecisao);
+  const prefixos = new Map(
+    (await prisma.vehicle.findMany({ where: { id: { in: [...new Set(emDecisao.map((b) => b.vehicleId))] } }, select: { id: true, prefixo: true } }))
+      .map((v) => [v.id, v.prefixo]),
+  );
 
   return (
     <div>
@@ -89,7 +96,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
           <h2 className="mb-2 text-base font-semibold">Solicitações pendentes</h2>
           <form action={aprovarLote}>
             <Tabela cols={["", "Solicitante", "Veículo", "Período", "Motivo", "Tipo", ""]} vazio="Nenhuma solicitação pendente.">
-              {pendentes.map((b, i) => (
+              {emDecisao.map((b, i) => (
                 <tr key={b.id}>
                   <td>
                     <input type="checkbox" name="ids" value={b.id} disabled={conflitos[i] > 0} aria-label="Selecionar" />
@@ -100,7 +107,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
                       <div className="text-xs text-slate-500">{b.user.setor ?? b.user.email}</div>
                     </div>
                   </td>
-                  <td className="whitespace-nowrap">{b.vehicle.prefixo}</td>
+                  <td className="whitespace-nowrap">{prefixos.get(b.vehicleId) ?? b.vehicle.prefixo}</td>
                   <td className="whitespace-nowrap">{fmtPeriodo(b)}</td>
                   <td>{b.destino}</td>
                   <td className="space-x-3">

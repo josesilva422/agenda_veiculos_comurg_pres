@@ -5,6 +5,8 @@ import { Dados, StatusBadge, btnGhostCls } from "@/components/ui";
 import { fmtDateTime, fmtPeriodo } from "@/lib/datetime";
 import { percurso, pendenciaKm, textoPendencia } from "@/lib/km";
 import { podeModificar } from "@/lib/booking-rules";
+import { lerAlteracao } from "@/lib/booking-service";
+import { OCUPAM } from "@/lib/status";
 
 /** Conteúdo do pop-up "Detalhes" de um agendamento do próprio solicitante. */
 export default async function DetalhesSolicitante({ id, base }: { id: string; base: string }) {
@@ -13,6 +15,10 @@ export default async function DetalhesSolicitante({ id, base }: { id: string; ba
   if (!b || b.userId !== u.id) return <p className="text-sm text-slate-600">Agendamento não encontrado.</p>;
 
   const km = percurso(b.kmInicial, b.kmFinal);
+  const pedido = lerAlteracao(b);
+  const veiculoPedido = pedido && pedido.vehicleId !== b.vehicleId
+    ? await prisma.vehicle.findUnique({ where: { id: pedido.vehicleId }, select: { prefixo: true, placa: true } })
+    : null;
   const pend = pendenciaKm(b);
   const linhas: [string, React.ReactNode][] = [
     ["Status", <StatusBadge key="s" status={b.status} />],
@@ -39,10 +45,14 @@ export default async function DetalhesSolicitante({ id, base }: { id: string; ba
 
   return (
     <div className="space-y-4">
-      {b.status === "ALTERACAO_PENDENTE" && (
-        <p className="rounded border-l-4 border-blue-500 bg-blue-50 px-3 py-2 text-sm text-blue-900">
-          Você alterou esta reserva. A alteração aguarda a aprovação do administrador.
-        </p>
+      {pedido && (
+        <div className="rounded border-l-4 border-blue-500 bg-blue-50 px-3 py-2 text-sm text-blue-900">
+          <p>Você pediu uma alteração, que aguarda o administrador. Até lá, vale a reserva aprovada abaixo.</p>
+          <p className="mt-1">
+            <b>Pedido:</b> {veiculoPedido ? `${veiculoPedido.prefixo} — ${veiculoPedido.placa} · ` : ""}
+            {fmtPeriodo(pedido)} · {pedido.destino}
+          </p>
+        </div>
       )}
       {b.status === "PENDENTE" && (
         <p className="rounded border-l-4 border-amber-500 bg-amber-50 px-3 py-2 text-sm text-amber-900">
@@ -56,7 +66,7 @@ export default async function DetalhesSolicitante({ id, base }: { id: string; ba
       )}
       <Dados linhas={linhas} />
       <div className="flex flex-wrap gap-2">
-        {b.status === "APROVADO" && (
+        {OCUPAM.includes(b.status) && (
           <Link href={`${base}?km=${b.id}`} scroll={false} className={btnGhostCls}>
             {pend ? "Informar km" : "Editar km"}
           </Link>

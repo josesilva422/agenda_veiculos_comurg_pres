@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { somenteDesenvolvimento } from "../scripts/so-desenvolvimento";
 
 const prisma = new PrismaClient();
 
@@ -17,13 +18,14 @@ const UNIDADES = [
 ];
 
 async function main() {
+  somenteDesenvolvimento("prisma/seed-unidades.ts");
   // Defina SENHA_INICIAL no ambiente; sem ela, usa um valor provisório de desenvolvimento.
   const senhaHash = await bcrypt.hash(process.env.SENHA_INICIAL ?? "trocar123", 10);
   for (const u of UNIDADES) {
     await prisma.user.upsert({
       where: { email: u.email },
       update: { setor: u.setor },
-      create: { nome: u.setor, email: u.email, senhaHash, role: "USER", setor: u.setor },
+      create: { nome: u.setor, email: u.email, senhaHash, role: "USER", setor: u.setor, trocarSenha: true },
     });
     console.log(`ok  ${u.email}  ->  ${u.setor}`);
   }

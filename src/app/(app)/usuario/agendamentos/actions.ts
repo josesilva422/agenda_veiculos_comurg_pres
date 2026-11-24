@@ -39,41 +39,50 @@ export async function editarAgendamento(id: string, fd: FormData) {
   const back = `${BASE}/${id}`;
   const d = validar(bookingSchema, fd, back);
 
+  let msg = "Alteração enviada para aprovação do administrador.";
   const r: Result = await prisma.$transaction(async (tx): Promise<Result> => {
     const atual = await tx.booking.findUnique({ where: { id }, include: { vehicle: true } });
     if (!atual || atual.userId !== u.id) return { erro: "Agendamento não encontrado." };
     if (!podeModificar(atual.status, atual.inicio)) return { erro: "Este agendamento não pode mais ser editado." };
-    if (JSON.stringify(snap(atual)) === JSON.stringify(snap(d))) return { erro: "Nenhuma alteração foi feita." };
+    const pedido = JSON.stringify(snap(d));
 
+    // ainda não aprovada: a própria solicitação é alterada e continua aguardando
+    if (atual.status === "PENDENTE") {
+      if (JSON.stringify(snap(atual)) === pedido) return { erro: "Nenhuma alteração foi feita." };
+      const erro = await validarRegras(tx, u.id, d, id);
+      if (erro) return { erro };
+      const b = await tx.booking.update({ where: { id }, data: d, include: { vehicle: true } });
+      await notificarAdmins(
+        tx, id, "ALTERACAO",
+        `${u.name} alterou a solicitação de ${atual.vehicle.prefixo}: agora ${b.vehicle.prefixo}, ${fmtDateTime(b.inicio)} a ${fmtDateTime(b.fim)}.`,
+      );
+      return { id };
+    }
+
+    // já aprovada: a reserva aprovada continua valendo (e segurando o veículo) até o administrador decidir;
+    // o pedido fica guardado à parte. Voltar aos dados aprovados retira o pedido.
+    if (JSON.stringify(snap(atual)) === pedido) {
+      if (atual.status === "APROVADO") return { erro: "Nenhuma alteração foi feita." };
+      await tx.booking.update({ where: { id }, data: { status: "APROVADO", versaoAnterior: null } });
+      await notificarAdmins(tx, id, "ALTERACAO", `${u.name} retirou o pedido de alteração da reserva de ${atual.vehicle.prefixo} (${fmtDateTime(atual.inicio)}).`);
+      msg = "Pedido de alteração retirado. A reserva aprovada continua como estava.";
+      return { id };
+    }
+    if (atual.versaoAnterior === pedido) return { erro: "Esta alteração já foi pedida e aguarda o administrador." };
     const erro = await validarRegras(tx, u.id, d, id);
     if (erro) return { erro };
-
-    // guarda a última versão aprovada (só uma vez) para poder desfazer se o admin rejeitar a alteração
-    const versaoAnterior =
-      atual.status === "APROVADO"
-        ? JSON.stringify(snap(atual))
-        : atual.status === "ALTERACAO_PENDENTE"
-          ? atual.versaoAnterior
-          : null;
-    const b = await tx.booking.update({
-      where: { id },
-      data: {
-        ...d,
-        status: atual.status === "PENDENTE" ? "PENDENTE" : "ALTERACAO_PENDENTE",
-        decididoPorId: null, decididoEm: null, justificativa: null, versaoAnterior,
-      },
-      include: { vehicle: true },
-    });
+    await tx.booking.update({ where: { id }, data: { status: "ALTERACAO_PENDENTE", versaoAnterior: pedido } });
+    const veiculo = d.vehicleId === atual.vehicleId ? atual.vehicle : await tx.vehicle.findUnique({ where: { id: d.vehicleId } });
     await notificarAdmins(
       tx, id, "ALTERACAO",
-      `${u.name} alterou a solicitação de ${atual.vehicle.prefixo}: agora ${b.vehicle.prefixo}, ${fmtDateTime(b.inicio)} a ${fmtDateTime(b.fim)}.`,
+      `${u.name} pediu alteração da reserva de ${atual.vehicle.prefixo} (${fmtDateTime(atual.inicio)}): ${veiculo?.prefixo ?? "?"}, ${fmtDateTime(d.inicio)} a ${fmtDateTime(d.fim)}.`,
     );
     return { id };
   });
 
   if ("erro" in r) voltar(back, r);
   revalidatePath(BASE);
-  voltar(BASE, { ok: "Alteração enviada para aprovação do administrador." });
+  voltar(BASE, { ok: msg });
 }
 
 export async function cancelarAgendamento(id: string) {

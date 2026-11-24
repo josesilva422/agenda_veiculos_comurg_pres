@@ -36,5 +36,5 @@ const userBase = {
   role: z.enum(["ADMIN", "USER"]),
 };
 
-// `senha` é opcional: no cadastro vazio = senha padrão; na edição, preenchida = redefinição (a regra da senha é conferida na ação)
-export const userSchema = z.object({ ...userBase, senha: z.string().max(100).optional() });
+// a senha não vem do formulário: o sistema gera uma senha provisória aleatória (veja admin/usuarios/actions.ts)
+export const userSchema = z.object(userBase);

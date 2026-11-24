@@ -24,7 +24,7 @@ export default async function TrocarSenhaPage() {
       </div>
       <div className={`space-y-4 p-5 ${cardCls}`}>
         <p className="text-sm text-slate-700">
-          No primeiro acesso é preciso trocar a senha padrão por uma senha só sua.
+          No primeiro acesso é preciso trocar a senha provisória por uma senha só sua.
         </p>
         <p className="rounded bg-slate-50 p-2 text-xs text-slate-600">{REGRAS_SENHA}</p>
         <FormTrocarSenha />

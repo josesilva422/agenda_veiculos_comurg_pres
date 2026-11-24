@@ -31,6 +31,11 @@ describe("validateWindow", () => {
   it("rejeita duração acima do máximo", () => {
     expect(validateWindow(d("2026-11-21T10:00:00Z"), d("2026-12-30T10:00:00Z"), agora, 30)).toMatch(/máxima/);
   });
+  it("sem antecedência (lançamento do administrador): aceita uso em andamento ou passado", () => {
+    expect(validateWindow(d("2026-11-20T11:00:00Z"), d("2026-11-20T15:00:00Z"), agora, null)).toBeNull();
+    expect(validateWindow(d("2026-11-10T08:00:00Z"), d("2026-11-10T12:00:00Z"), agora, null)).toBeNull();
+    expect(validateWindow(d("2026-11-10T12:00:00Z"), d("2026-11-10T08:00:00Z"), agora, null)).toMatch(/posterior/);
+  });
 });
 
 describe("datetime (Brasília)", () => {

@@ -1,4 +1,4 @@
-import type { BookingStatus } from "./status";
+import { OCUPAM, type BookingStatus } from "./status";
 
 export type ReportRow = {
   userId: string;
@@ -25,7 +25,7 @@ export const horas = (r: { inicio: Date; fim: Date }) => (r.fim.getTime() - r.in
 function agg(map: Map<string, Agg>, key: string, nome: string, detalhe: string, r: ReportRow) {
   const a = map.get(key) ?? { nome, detalhe, total: 0, aprovadas: 0, canceladas: 0, rejeitadas: 0, horasAprovadas: 0 };
   a.total++;
-  if (r.status === "APROVADO") {
+  if (OCUPAM.includes(r.status)) {
     a.aprovadas++;
     a.horasAprovadas += horas(r);
   }
@@ -49,7 +49,7 @@ export function summarize(rows: ReportRow[]) {
     [...m.values()].sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome, "pt-BR"));
   return {
     total: rows.length,
-    horasAprovadas: rows.filter((r) => r.status === "APROVADO").reduce((s, r) => s + horas(r), 0),
+    horasAprovadas: rows.filter((r) => OCUPAM.includes(r.status)).reduce((s, r) => s + horas(r), 0),
     porStatus,
     porVeiculo: ordena(veic),
     porUsuario: ordena(usu),

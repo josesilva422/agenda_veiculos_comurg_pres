@@ -19,6 +19,9 @@ const MINHAS: Record<string, string> = {
   APROVADO: "Minha reserva aprovada",
 };
 
+/** Texto das reservas de outras pessoas fora da visão "Lista" (o nome só aparece na lista). */
+const OCUPADO = "Reservado";
+
 const HORA_MS = 3600_000;
 const DIA_MS = 24 * HORA_MS;
 
@@ -82,7 +85,7 @@ export default function CalendarView({
         const mesmoDia = a.getTime() >= ini && b.getTime() <= fim;
         return {
           id: e.id,
-          titulo: e.title,
+          titulo: e.extendedProps.deOutro ? OCUPADO : e.title,
           horario: mesmoDia ? `${hm(a)} às ${hm(b)}` : `${dm(a)} ${hm(a)} → ${dm(b)} ${hm(b)}`,
           cor: e.backgroundColor,
           status: statusInfo[e.extendedProps.status as keyof typeof statusInfo]?.label ?? "",
@@ -251,7 +254,8 @@ export default function CalendarView({
           eventDisplay="block"
           eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
           selectable
-          selectAllow={(s) => s.start.getTime() >= Date.now() - 3 * HORA_MS - 24 * HORA_MS}
+          // o administrador também lança uso em andamento ou que já aconteceu
+          selectAllow={(s) => role === "ADMIN" || s.start.getTime() >= Date.now() - 3 * HORA_MS - 24 * HORA_MS}
           select={(s) => (s.allDay ? abrirDia(s.startStr.slice(0, 10)) : novo(s.startStr, s.endStr, false))}
           eventClick={(i) => {
             const url = i.event.extendedProps.url as string | undefined;
@@ -261,8 +265,18 @@ export default function CalendarView({
               router.push(role === "ADMIN" ? `${path}?decidir=${i.event.id || url.split("/").pop()}` : url);
             }
           }}
+          // reserva de outra pessoa: na grade, só a faixa de cor; o nome aparece apenas na visão "Lista"
+          eventContent={(a) =>
+            a.event.extendedProps.deOutro && !a.view.type.startsWith("list") ? (
+              <span className="block px-1 text-[0.7rem] leading-4">
+                &nbsp;<span className="sr-only">{OCUPADO}</span>
+              </span>
+            ) : (
+              true
+            )
+          }
           eventDidMount={(i) => {
-            i.el.title = i.event.title;
+            i.el.title = i.event.extendedProps.deOutro && !i.view.type.startsWith("list") ? OCUPADO : i.event.title;
           }}
         />
       </div>

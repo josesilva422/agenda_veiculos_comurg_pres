@@ -10,6 +10,7 @@ import { fmtData, fmtDateTime } from "@/lib/datetime";
 import { podeModificar } from "@/lib/booking-rules";
 import { pendenciaKm, textoPendencia } from "@/lib/km";
 import { tipoResumido } from "@/lib/veiculo";
+import { OCUPAM } from "@/lib/status";
 import { cancelarAgendamento, criarAgendamento } from "./actions";
 
 const BASE = "/usuario/agendamentos";
@@ -79,7 +80,7 @@ export default async function MeusAgendamentos({ searchParams }: { searchParams:
             </div>
             <div className="mt-1 break-words text-sm text-slate-600">{b.destino}</div>
             {b.justificativa && <div className="mt-1 text-xs text-slate-500">{b.justificativa}</div>}
-            {b.status === "APROVADO" && (
+            {OCUPAM.includes(b.status) && (
               <div className="mt-2 flex items-center justify-between gap-2 rounded bg-slate-50 px-2 py-1.5 text-sm">
                 <span className="tabular-nums text-slate-700">Km: {kmTexto(b)}</span>
                 <Link href={abrirKm(b.id)} scroll={false} className={linkCls}>
@@ -114,7 +115,7 @@ export default async function MeusAgendamentos({ searchParams }: { searchParams:
             <td className="whitespace-nowrap">{fmtDateTime(b.inicio)}</td>
             <td className="whitespace-nowrap">{fmtDateTime(b.fim)}</td>
             <td>{b.destino}</td>
-            <td className="whitespace-nowrap tabular-nums">{b.status === "APROVADO" ? kmTexto(b) : "—"}</td>
+            <td className="whitespace-nowrap tabular-nums">{OCUPAM.includes(b.status) ? kmTexto(b) : "—"}</td>
             <td>
               <div>
                 <StatusBadge status={b.status} />
@@ -123,7 +124,7 @@ export default async function MeusAgendamentos({ searchParams }: { searchParams:
             </td>
             <td className="flex justify-end gap-3">
               <Link href={abrirDetalhes(b.id)} scroll={false} className={linkCls}>Detalhes</Link>
-              {b.status === "APROVADO" && (
+              {OCUPAM.includes(b.status) && (
                 <Link href={abrirKm(b.id)} scroll={false} className={linkCls}>
                   {pendenciaKm(b, agora) ? "Informar km" : "Editar km"}
                 </Link>
