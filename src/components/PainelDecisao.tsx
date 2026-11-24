@@ -86,15 +86,14 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
         {decidivel && conflitos.length > 0 && (
           <section className={`space-y-3 border-red-200 p-6 ${cardCls}`}>
             <div>
-              <h2 className="font-semibold">Substituir a reserva aprovada</h2>
-              <p className="mt-1 text-sm text-slate-600">
-                Cancela {conflitos.length === 1 ? "a reserva aprovada em conflito" : `as ${conflitos.length} reservas aprovadas em conflito`} e aprova esta solicitação no lugar.
-                Quem teve a reserva cancelada é avisado por notificação.
+              <h2 className="font-semibold">Cancelar solicitação aprovada</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                {conflitos.length === 1 ? "Usuário a ser notificado" : "Usuários a serem notificados"} sobre o cancelamento:
               </p>
-              <ul className="mt-2 list-disc space-y-0.5 pl-5 text-sm text-slate-800">
+              <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-slate-800">
                 {conflitos.map((c) => (
                   <li key={c.id}>
-                    <b>{c.user.nome}</b>: {fmtPeriodo(c)}
+                    <b>{c.user.nome}</b> — {fmtPeriodo(c)}
                     {c.inicio <= new Date() && <span className="ml-1 text-red-700">(já em andamento)</span>}
                   </li>
                 ))}
@@ -102,7 +101,7 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
             </div>
             <form action={substituirEAprovar.bind(null, id)} className="space-y-3">
               {volta}
-              <Field label="Motivo informado a quem perde a reserva (opcional)">
+              <Field label="Motivo da substituição">
                 <input name="justificativa" maxLength={300} className={inputCls} />
               </Field>
               <label className="flex items-start gap-2 text-sm text-slate-700">
@@ -180,15 +179,18 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
             <h2 className="mb-2 font-semibold">Gerenciar</h2>
             <div className="flex flex-wrap items-end gap-4">
               <Link href={`/admin/agendamentos/${id}/editar`} className={btnGhostCls}>Editar dados</Link>
-              <form action={cancelarPeloAdmin.bind(null, id)} className="flex flex-wrap items-end gap-2">
-                {volta}
-                <Field label="Motivo do cancelamento (opcional)">
-                  <input name="justificativa" maxLength={300} className={inputCls} />
-                </Field>
-                <button className="rounded border border-red-300 px-4 py-2 text-sm text-red-700 hover:bg-red-50">
-                  Cancelar agendamento
-                </button>
-              </form>
+              {/* solicitação pendente: o administrador decide aprovando ou rejeitando (rejeitar já cobre o cancelamento) */}
+              {!decidivel && (
+                <form action={cancelarPeloAdmin.bind(null, id)} className="flex flex-wrap items-end gap-2">
+                  {volta}
+                  <Field label="Motivo do cancelamento (opcional)">
+                    <input name="justificativa" maxLength={300} className={inputCls} />
+                  </Field>
+                  <button className="rounded border border-red-300 px-4 py-2 text-sm text-red-700 hover:bg-red-50">
+                    Cancelar agendamento
+                  </button>
+                </form>
+              )}
             </div>
           </section>
         )}
