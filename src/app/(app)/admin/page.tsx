@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Badge, Stat, Stats, Tabela, Titulo, btnCls, cardCls, linkCls } from "@/components/ui";
-import { fmtData, fmtPeriodo } from "@/lib/datetime";
-import { alertaLabel, calcularAlertas } from "@/lib/alerts";
+import { fmtData, fmtPeriodo, parseLocalBr, toInputDateTime } from "@/lib/datetime";
 import { overlaps } from "@/lib/booking-rules";
 import { pendenciaKm, textoPendencia } from "@/lib/km";
 import { AGUARDANDO, COR } from "@/lib/status";
@@ -10,6 +9,7 @@ import DecidirAgendamento from "@/components/DecidirAgendamento";
 import { aprovarLote } from "./agendamentos/actions";
 
 const LIMITE_FILA = 100;
+const LIMITE_LISTA = 10;
 
 /** Quantas reservas aprovadas colidem com cada pendente — uma consulta só, cruzada em memória. */
 async function calcularConflitos(pendentes: { id: string; vehicleId: string; inicio: Date; fim: Date }[]) {
@@ -32,7 +32,12 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
   const { decidir } = await searchParams;
   const agora = new Date();
   const fila = { status: { in: AGUARDANDO } };
-  const [pendentes, totalPendentes, emUso, proximos, comCnh, kmCandidatas] = await Promise.all([
+  // mês corrente em horário de Brasília: do dia 1, 00:00, até agora
+  const inicioMes = parseLocalBr(`${toInputDateTime(agora).slice(0, 7)}-01T00:00`) ?? agora;
+  const concluidosMes = { status: "APROVADO" as const, fim: { gte: inicioMes, lte: agora } };
+  const aConcluir = { status: "APROVADO" as const, fim: { gt: agora } };
+  const resumo = { id: true, inicio: true, fim: true, user: { select: { nome: true } }, vehicle: { select: { prefixo: true } } };
+  const [pendentes, totalPendentes, totalConcluidos, concluidos, totalAConcluir, aprovadosAConcluir, kmCandidatas] = await Promise.all([
     prisma.booking.findMany({
       where: fila,
       select: {
@@ -44,17 +49,10 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
       take: LIMITE_FILA,
     }),
     prisma.booking.count({ where: fila }),
-    prisma.booking.count({ where: { status: "APROVADO", inicio: { lte: agora }, fim: { gt: agora } } }),
-    prisma.booking.findMany({
-      where: { status: "APROVADO", inicio: { gt: agora } },
-      select: { id: true, inicio: true, fim: true, user: { select: { nome: true } }, vehicle: { select: { prefixo: true } } },
-      orderBy: { inicio: "asc" },
-      take: 5,
-    }),
-    prisma.user.findMany({
-      where: { ativo: true, cnhValidade: { not: null } },
-      select: { id: true, nome: true, ativo: true, cnhValidade: true },
-    }),
+    prisma.booking.count({ where: concluidosMes }),
+    prisma.booking.findMany({ where: concluidosMes, select: resumo, orderBy: { fim: "desc" }, take: LIMITE_LISTA }),
+    prisma.booking.count({ where: aConcluir }),
+    prisma.booking.findMany({ where: aConcluir, select: resumo, orderBy: { inicio: "asc" }, take: LIMITE_LISTA }),
     // reservas aprovadas em que o uso já começou e falta algum km (confirmado em memória por pendenciaKm)
     prisma.booking.findMany({
       where: { status: "APROVADO", inicio: { lte: agora }, OR: [{ kmInicial: null }, { kmFinal: null, fim: { lte: agora } }] },
@@ -71,7 +69,9 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
     const p = pendenciaKm(b, agora);
     return p ? [{ b, texto: textoPendencia(p) }] : [];
   });
-  const alertas = calcularAlertas(comCnh, agora);
+  const hojeBr = toInputDateTime(agora).slice(0, 10);
+  const linkConcluidos = `/admin/agendamentos?${new URLSearchParams({ status: "APROVADO", de: `${hojeBr.slice(0, 7)}-01`, ate: hojeBr })}`;
+  const linkAConcluir = `/admin/agendamentos?${new URLSearchParams({ status: "APROVADO", de: hojeBr })}`;
   const conflitos = await calcularConflitos(pendentes);
 
   return (
@@ -80,27 +80,10 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
       <div className="space-y-6">
         <Stats>
           <Stat valor={totalPendentes} rotulo="Pendentes de decisão" />
-          <Stat valor={emUso} rotulo="Veículos em uso agora" />
-          <Stat valor={alertas.length} rotulo="Alertas de CNH" />
+          <Stat valor={totalConcluidos} rotulo="Concluídos no mês" />
+          <Stat valor={totalAConcluir} rotulo="Aprovados a concluir" />
           <Stat valor={kmPendentes.length} rotulo="Reservas sem km" />
         </Stats>
-
-        {alertas.length > 0 && (
-          <section aria-labelledby="alertas">
-            <h2 id="alertas" className="mb-2 text-base font-semibold">Alertas de CNH ({alertas.length})</h2>
-            <ul className={`divide-y text-sm ${cardCls}`}>
-              {alertas.map((a) => (
-                <li key={a.userId + a.tipo} className="flex flex-wrap items-center justify-between gap-2 p-3">
-                  <span>
-                    <b>{a.nome}</b> — {alertaLabel[a.tipo]}
-                    {a.data && <span className="text-slate-500"> ({fmtData(a.data)})</span>}
-                  </span>
-                  <Link href={`/admin/usuarios/${a.userId}`} className={linkCls}>Resolver</Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
 
         <section>
           <h2 className="mb-2 text-base font-semibold">Solicitações pendentes</h2>
@@ -166,16 +149,48 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
           </section>
         )}
 
-        <section>
-          <h2 className="mb-2 text-base font-semibold">Próximos agendamentos aprovados</h2>
+        <section aria-labelledby="a-concluir">
+          <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="a-concluir" className="text-base font-semibold">Aprovados a concluir ({totalAConcluir})</h2>
+            {totalAConcluir > aprovadosAConcluir.length && (
+              <Link href={linkAConcluir} className={`text-sm ${linkCls}`}>Ver todos</Link>
+            )}
+          </div>
           <ul className={`divide-y text-sm ${cardCls}`}>
-            {proximos.map((b) => (
-              <li key={b.id} className="flex flex-wrap justify-between gap-2 p-3">
-                <span><b>{b.vehicle.prefixo}</b> — {b.user.nome}</span>
-                <span className="text-slate-500">{fmtPeriodo(b)}</span>
+            {aprovadosAConcluir.map((b) => (
+              <li key={b.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 p-3">
+                <span>
+                  <b>{b.vehicle.prefixo}</b> — {b.user.nome}
+                  {b.inicio <= agora && <span className="ml-2 rounded bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700">em andamento</span>}
+                </span>
+                <span className="flex items-center gap-3">
+                  <span className="text-slate-500">{fmtPeriodo(b)}</span>
+                  <Link href={`/admin?decidir=${b.id}`} className={linkCls} scroll={false}>Abrir</Link>
+                </span>
               </li>
             ))}
-            {proximos.length === 0 && <li className="p-3 text-slate-500">Nenhum agendamento futuro.</li>}
+            {aprovadosAConcluir.length === 0 && <li className="p-3 text-slate-500">Nenhum agendamento aprovado a concluir.</li>}
+          </ul>
+        </section>
+
+        <section aria-labelledby="concluidos">
+          <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="concluidos" className="text-base font-semibold">Concluídos no mês ({totalConcluidos})</h2>
+            {totalConcluidos > concluidos.length && (
+              <Link href={linkConcluidos} className={`text-sm ${linkCls}`}>Ver todos</Link>
+            )}
+          </div>
+          <ul className={`divide-y text-sm ${cardCls}`}>
+            {concluidos.map((b) => (
+              <li key={b.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 p-3">
+                <span><b>{b.vehicle.prefixo}</b> — {b.user.nome}</span>
+                <span className="flex items-center gap-3">
+                  <span className="text-slate-500">{fmtPeriodo(b)}</span>
+                  <Link href={`/admin?decidir=${b.id}`} className={linkCls} scroll={false}>Abrir</Link>
+                </span>
+              </li>
+            ))}
+            {concluidos.length === 0 && <li className="p-3 text-slate-500">Nenhum agendamento concluído neste mês.</li>}
           </ul>
         </section>
       </div>

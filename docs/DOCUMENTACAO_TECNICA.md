@@ -117,7 +117,6 @@ Os grupos `(app)` não aparecem na URL: `src/app/(app)/admin/usuarios` responde 
 | `datetime.ts` | Conversões de fuso (Brasília ↔ UTC) e formatação. |
 | `status.ts` | Rótulos e cores dos status (fonte única). |
 | `reports.ts`, `reports-summary.ts`, `report-export.ts` | Filtros, resumo e exportação Excel/PDF. |
-| `alerts.ts` | Alertas de CNH. |
 | `env.ts` | Verificação das variáveis em produção. |
 
 ## 5. Modelo de dados
@@ -142,7 +141,7 @@ erDiagram
 | `nome`, `email` (único), `senhaHash` | `email` em minúsculas. A senha nunca é guardada em texto. |
 | `matricula` (única, opcional) | Também serve para o login. |
 | `telefone`, `cargo`, `setor` (lotação), `contato` | Obrigatórios no cadastro pelo administrador. |
-| `cnh`, `cnhValidade` | Opcionais; geram alertas de vencimento. |
+| `cnh`, `cnhValidade` | Opcionais; apenas informativos (o painel não mostra mais alertas de vencimento). |
 | `role` | `ADMIN` ou `USER`. |
 | `ativo` | `false` bloqueia o acesso na hora (sem apagar histórico). |
 | `trocarSenha` | `true` enquanto usa a senha padrão: força a troca no primeiro acesso. |
@@ -234,8 +233,9 @@ Os administradores são notificados.
 - **Lembretes** (`km-lembretes.ts`): ao abrir o sistema, para reservas aprovadas dos últimos 30 dias com km pendente (inicial após o início, final após o fim),
   cria a notificação `KM_PENDENTE`, no máximo uma a cada 24 h por reserva. Não depende de tarefa agendada.
 
-### 7.6 Alertas de CNH
-O painel do administrador lista usuários ativos com CNH vencida ou que vence em até 30 dias (`alerts.ts`).
+### 7.6 Indicadores do painel
+"Concluído" não é um status: é uma reserva `APROVADO` cujo horário de fim já passou. O painel do administrador mostra quantas foram concluídas no mês corrente (horário de Brasília)
+e quantas aprovadas ainda vão ser concluídas, além das pendentes de decisão e das reservas sem km.
 
 ## 8. Telas, rotas e APIs
 
@@ -248,7 +248,7 @@ O painel do administrador lista usuários ativos com CNH vencida ou que vence em
 | `/usuario` | solicitante | Calendário. |
 | `/usuario/agendamentos` | solicitante | Meus agendamentos; pop-ups de novo agendamento e de km. |
 | `/usuario/notificacoes`, `/usuario/perfil` | solicitante | Notificações completas; dados e troca de senha. |
-| `/admin` | administrador | Painel: pendências, km pendente, alertas de CNH. |
+| `/admin` | administrador | Painel: pendentes, concluídos no mês, aprovados a concluir e km pendente. |
 | `/admin/agendamentos` | administrador | Lista com filtros (status, período), agrupada por dia; pop-up de decisão. |
 | `/admin/calendario` | administrador | Calendário com filtros. |
 | `/admin/usuarios`, `/admin/veiculos` | administrador | Cadastros (pop-ups de novo e edição). |
@@ -358,7 +358,7 @@ Em produção `env.ts` **recusa iniciar** com segredo ausente/curto, sem `NEXTAU
 
 ## 15. Testes e qualidade
 - `npm test` roda os testes automáticos (vitest) das regras puras: horário e sobreposição (`booking-rules`), quilometragem (`km`), senha (`senha`),
-  limite de login (`rate-limit`), alertas de CNH (`alerts`), resumo de relatórios (`reports-summary`) e configuração (`env`).
+  limite de login (`rate-limit`), veículo (`veiculo`), resumo de relatórios (`reports-summary`) e configuração (`env`).
 - `npm run lint` e `npx tsc --noEmit` devem passar antes de cada envio.
 - As migrações PostgreSQL foram validadas em um PostgreSQL real (incluindo a restrição de sobreposição).
 - **Não há** testes de ponta a ponta (navegador) automatizados; o fluxo completo é conferido manualmente.

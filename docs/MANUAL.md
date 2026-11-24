@@ -74,7 +74,12 @@ Seus dados (nome, matrícula, telefone, cargo, lotação, contato, CNH) e a troc
 ## Administrador
 
 ### Painel
-Pendências, veículos em uso, **reservas sem km**, próximos agendamentos e **alertas** de CNH (vencida ou a vencer em 30 dias).
+Quatro indicadores: **pendentes de decisão**, **concluídos no mês**, **aprovados a concluir** e **reservas sem km**.
+- **Solicitações pendentes:** aprovar em lote ou abrir uma a uma.
+- **Aprovados a concluir:** reservas aprovadas que ainda não terminaram, em ordem de data (as que já começaram levam a etiqueta "em andamento").
+- **Concluídos no mês:** reservas aprovadas que terminaram desde o dia 1º do mês corrente.
+- Cada lista mostra as 10 primeiras, com **Abrir** para ver os detalhes e **Ver todos** para abrir a lista completa já filtrada.
+Um agendamento é considerado concluído quando está aprovado e o horário de fim já passou.
 A seção **Quilometragem pendente** lista as reservas em que falta o km inicial ou final; **Abrir** leva ao pop-up para o administrador incluir ou cobrar.
 
 ### Aprovar ou rejeitar
