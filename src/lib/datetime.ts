@@ -6,7 +6,8 @@ const TZ = "America/Sao_Paulo";
 export function parseLocalBr(v: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) return null;
   const d = new Date(`${v}:00-0${OFFSET_H}:00`);
-  return Number.isNaN(d.getTime()) ? null : d;
+  // o JavaScript "corrige" datas impossíveis (30/02 vira 02/03; 24:00 vira o dia seguinte): só aceita se voltar igual
+  return Number.isNaN(d.getTime()) || toInputDateTime(d) !== v ? null : d;
 }
 
 /** Date UTC -> "YYYY-MM-DDTHH:mm" em Brasília, para <input type="datetime-local">. */

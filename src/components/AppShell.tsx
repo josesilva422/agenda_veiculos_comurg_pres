@@ -95,7 +95,8 @@ function guardarRascunho(e: Event) {
   if (!(f instanceof HTMLFormElement) || !f.closest("#conteudo")) return;
   const valores: Record<string, string> = {};
   new FormData(f).forEach((v, k) => {
-    if (typeof v === "string" && !k.startsWith("$") && !NAO_GUARDAR.has(k)) valores[k] = v;
+    // "versao": a versão da solicitação na tela; restaurá-la traria de volta uma versão desatualizada
+    if (typeof v === "string" && !k.startsWith("$") && !k.startsWith("versao") && !NAO_GUARDAR.has(k)) valores[k] = v;
   });
   try {
     sessionStorage.setItem(RASCUNHO, JSON.stringify({ t: Date.now(), path: location.pathname, valores }));
@@ -127,7 +128,10 @@ function restaurarRascunho(path: string, tentativa = 0) {
   else if (achou) sessionStorage.removeItem(RASCUNHO);
 }
 
-const FOCO = "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-marca";
+/** Parâmetros da URL que abrem um pop-up (ModalDecisao e NovoAgendamento), que mostra o erro por conta própria. */
+const PARAMS_POPUP = ["decidir", "novo", "editar", "detalhes", "km"];
+
+const FOCO ="focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-marca";
 
 export default function AppShell({
   grupos,
@@ -263,7 +267,8 @@ export default function AppShell({
             {aviso.get("ok")}
           </p>
         )}
-        {aviso.get("erro") && (
+        {/* com um pop-up aberto, o erro aparece dentro dele (e não repetido aqui atrás) */}
+        {aviso.get("erro") && !PARAMS_POPUP.some((p) => aviso.has(p)) && (
           <p role="alert" className="mb-4 rounded border-l-4 border-red-600 bg-red-50 px-3 py-2 text-sm text-red-800">
             {aviso.get("erro")}
           </p>

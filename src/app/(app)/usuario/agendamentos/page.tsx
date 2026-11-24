@@ -14,12 +14,15 @@ import { OCUPAM } from "@/lib/status";
 import { cancelarAgendamento, criarAgendamento } from "./actions";
 
 const BASE = "/usuario/agendamentos";
+/** Quantos agendamentos a lista mostra (os mais recentes). O histórico completo fica nos relatórios do administrador. */
+const LIMITE = 100;
 
 export default async function MeusAgendamentos({ searchParams }: { searchParams: Promise<{ km?: string; detalhes?: string }> }) {
   const { km, detalhes } = await searchParams;
   const u = await requireUser();
-  const [lista, vehicles] = await Promise.all([
-    prisma.booking.findMany({ where: { userId: u.id }, include: { vehicle: true }, orderBy: { inicio: "desc" } }),
+  const [lista, total, vehicles] = await Promise.all([
+    prisma.booking.findMany({ where: { userId: u.id }, include: { vehicle: true }, orderBy: { inicio: "desc" }, take: LIMITE }),
+    prisma.booking.count({ where: { userId: u.id } }),
     prisma.vehicle.findMany({
       where: { status: "ATIVO" },
       select: { id: true, prefixo: true, placa: true, tipo: true, lotacao: true },
@@ -142,6 +145,12 @@ export default async function MeusAgendamentos({ searchParams }: { searchParams:
         ))}
       </Tabela>
       </div>
+
+      {total > lista.length && (
+        <p className="mt-3 text-center text-xs text-slate-500">
+          Mostrando os {lista.length} agendamentos mais recentes de {total}.
+        </p>
+      )}
 
       {detalhes && (
         <ModalDecisao key={detalhes} param="detalhes" titulo="Detalhes do agendamento">

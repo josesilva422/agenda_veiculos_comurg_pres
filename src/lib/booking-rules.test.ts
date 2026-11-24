@@ -48,6 +48,12 @@ describe("datetime (Brasília)", () => {
     expect(parseLocalBr("20/11/2026 08:30")).toBeNull();
     expect(parseLocalBr("2026-13-40T99:99")).toBeNull();
   });
+  it("rejeita datas e horas impossíveis em vez de corrigi-las", () => {
+    expect(parseLocalBr("2026-02-30T08:00")).toBeNull();
+    expect(parseLocalBr("2026-04-31T08:00")).toBeNull();
+    expect(parseLocalBr("2026-11-20T24:00")).toBeNull();
+    expect(parseLocalBr("2028-02-29T08:00")).not.toBeNull();
+  });
 });
 
 describe("podeModificar", () => {

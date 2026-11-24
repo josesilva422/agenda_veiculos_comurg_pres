@@ -1,11 +1,12 @@
 "use server";
+import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { retornoSeguro, validar, voltar } from "@/lib/action";
 import { fmtDateTime } from "@/lib/datetime";
-import { AGUARDANDO, ATIVOS, OCUPAM } from "@/lib/status";
+import { AGUARDANDO, ATIVOS, OCUPAM, type BookingStatus } from "@/lib/status";
 import {
   bookingSchema,
   conflitoAprovado,
@@ -40,14 +41,42 @@ function semSobreposicaoR(e: unknown): Result {
   return { erro: semSobreposicao(e) };
 }
 
+const MSG_MUDOU = "Esta solicitação mudou ou já foi decidida por outra pessoa enquanto você analisava. Abra de novo para conferir.";
+
+/**
+ * Versão (data da última alteração) que o administrador tinha na tela ao decidir, enviada pelo formulário
+ * (`versao`, ou `versao:<id>` na aprovação em lote).
+ */
+function versaoVista(fd: FormData, id?: string): string | null {
+  const v = fd.get(id ? `versao:${id}` : "versao");
+  return typeof v === "string" && v ? v : null;
+}
+
+/** A solicitação mudou desde que o administrador a abriu (o solicitante alterou o pedido, por exemplo)? */
+const mudou = (b: { atualizadoEm: Date }, versao: string | null) => versao !== null && b.atualizadoEm.toISOString() !== versao;
+
+/**
+ * Grava a decisão só se a reserva ainda estiver exatamente como foi lida (mesmo status e mesma última alteração).
+ * Se outro administrador decidiu antes, ou o solicitante mexeu no pedido nesse meio-tempo, não grava nada.
+ */
+async function gravarSeIgual(
+  tx: Tx,
+  b: { id: string; status: BookingStatus; atualizadoEm: Date },
+  data: Prisma.BookingUncheckedUpdateManyInput,
+): Promise<boolean> {
+  const r = await tx.booking.updateMany({ where: { id: b.id, status: b.status, atualizadoEm: b.atualizadoEm }, data });
+  return r.count === 1;
+}
+
 /**
  * Aprova uma solicitação (dentro de uma transação). Retorna erro ou null.
  * Pedido de alteração: os dados pedidos passam a valer na reserva.
  */
-async function aprovarUma(tx: Tx, id: string, adminId: string): Promise<string | null> {
+async function aprovarUma(tx: Tx, id: string, adminId: string, versao: string | null): Promise<string | null> {
   const b = await tx.booking.findUnique({ where: { id } });
   if (!b) return "Agendamento não encontrado.";
   if (!AGUARDANDO.includes(b.status)) return "Esta solicitação já foi decidida.";
+  if (mudou(b, versao)) return MSG_MUDOU;
   const alteracao = lerAlteracao(b);
   if (b.status === "ALTERACAO_PENDENTE" && !alteracao) return "Não foi possível ler o pedido de alteração. Rejeite-o e peça ao solicitante para refazer.";
   const novo = alteracao ?? b;
@@ -60,10 +89,10 @@ async function aprovarUma(tx: Tx, id: string, adminId: string): Promise<string |
   const dados = alteracao
     ? { vehicleId: alteracao.vehicleId, inicio: alteracao.inicio, fim: alteracao.fim, destino: alteracao.destino, passageiros: alteracao.passageiros, motorista: alteracao.motorista }
     : {};
-  await tx.booking.update({
-    where: { id },
-    data: { ...dados, status: "APROVADO", decididoPorId: adminId, decididoEm: new Date(), justificativa: null, versaoAnterior: null },
+  const gravou = await gravarSeIgual(tx, b, {
+    ...dados, status: "APROVADO", decididoPorId: adminId, decididoEm: new Date(), justificativa: null, versaoAnterior: null,
   });
+  if (!gravou) return MSG_MUDOU;
   await notificarUsuario(
     tx, b.userId, id, "APROVADO",
     `${alteracao ? "Alteração aprovada" : "Solicitação aprovada"}: ${vehicle.prefixo}, ${fmtDateTime(novo.inicio)} a ${fmtDateTime(novo.fim)}.`,
@@ -71,23 +100,22 @@ async function aprovarUma(tx: Tx, id: string, adminId: string): Promise<string |
   return null;
 }
 
-async function rejeitarUma(tx: Tx, id: string, adminId: string, motivo: string): Promise<string | null> {
+async function rejeitarUma(tx: Tx, id: string, adminId: string, motivo: string, versao: string | null): Promise<string | null> {
   const b = await tx.booking.findUnique({ where: { id }, include: { vehicle: true } });
   if (!b) return "Agendamento não encontrado.";
+  if (AGUARDANDO.includes(b.status) && mudou(b, versao)) return MSG_MUDOU;
   const decisao = { decididoPorId: adminId, decididoEm: new Date() };
 
   if (b.status === "PENDENTE") {
-    await tx.booking.update({ where: { id }, data: { status: "REJEITADO", justificativa: motivo, ...decisao } });
+    if (!(await gravarSeIgual(tx, b, { status: "REJEITADO", justificativa: motivo, ...decisao }))) return MSG_MUDOU;
     await notificarUsuario(tx, b.userId, id, "REJEITADO", `Solicitação rejeitada (${b.vehicle.prefixo}, ${fmtDateTime(b.inicio)}). Motivo: ${motivo}`);
     return null;
   }
 
   if (b.status === "ALTERACAO_PENDENTE") {
     // a reserva já está com os dados aprovados: basta descartar o pedido de alteração
-    await tx.booking.update({
-      where: { id },
-      data: { status: "APROVADO", justificativa: `Alteração rejeitada: ${motivo}`, versaoAnterior: null, ...decisao },
-    });
+    const gravou = await gravarSeIgual(tx, b, { status: "APROVADO", justificativa: `Alteração rejeitada: ${motivo}`, versaoAnterior: null, ...decisao });
+    if (!gravou) return MSG_MUDOU;
     await notificarUsuario(tx, b.userId, id, "ALTERACAO_REJEITADA", `Alteração rejeitada; a reserva original foi mantida. Motivo: ${motivo}`);
     return null;
   }
@@ -97,7 +125,7 @@ async function rejeitarUma(tx: Tx, id: string, adminId: string, motivo: string):
 export async function aprovar(id: string, fd?: FormData) {
   const admin = await requireAdmin();
   const retorno = fd ? retornoSeguro(fd, ORIGENS) : null;
-  const erro = await prisma.$transaction((tx) => aprovarUma(tx, id, admin.id)).catch(semSobreposicao);
+  const erro = await prisma.$transaction((tx) => aprovarUma(tx, id, admin.id, fd ? versaoVista(fd) : null)).catch(semSobreposicao);
   refresh();
   if (erro) voltar(retorno ? `${retorno}?decidir=${id}` : `${LISTA}/${id}`, { erro });
   voltar(retorno ?? PAINEL, { ok: "Solicitação aprovada." });
@@ -130,23 +158,21 @@ export async function substituirEAprovar(id: string, fd: FormData) {
       });
       if (conflitos.length === 0) throw new ErroNegocio("Não há mais reserva em conflito: use Aprovar.");
       for (const c of conflitos) {
-        await tx.booking.update({
-          where: { id: c.id },
-          data: {
-            status: "CANCELADO",
-            justificativa: motivo ?? "Substituída por outra solicitação aprovada.",
-            decididoPorId: admin.id,
-            decididoEm: new Date(),
-            versaoAnterior: null,
-          },
+        const gravou = await gravarSeIgual(tx, c, {
+          status: "CANCELADO",
+          justificativa: motivo ?? "Substituída por outra solicitação aprovada.",
+          decididoPorId: admin.id,
+          decididoEm: new Date(),
+          versaoAnterior: null,
         });
+        if (!gravou) throw new ErroNegocio(MSG_MUDOU);
         await notificarUsuario(
           tx, c.userId, c.id, "CANCELADO",
           `Sua reserva de ${c.vehicle.prefixo} (${fmtDateTime(c.inicio)} a ${fmtDateTime(c.fim)}) foi cancelada pelo administrador para atender outra solicitação.${motivo ? ` Motivo: ${motivo}` : ""}`,
         );
       }
       canceladas = conflitos.length;
-      const e = await aprovarUma(tx, id, admin.id);
+      const e = await aprovarUma(tx, id, admin.id, versaoVista(fd));
       if (e) throw new ErroNegocio(e);
       return null;
     })
@@ -167,7 +193,7 @@ export async function aprovarLote(fd: FormData) {
   if (ids.length === 0) voltar(PAINEL, { erro: "Selecione ao menos uma solicitação." });
   const falhas: string[] = [];
   for (const id of ids) {
-    const erro = await prisma.$transaction((tx) => aprovarUma(tx, id, admin.id)).catch(semSobreposicao);
+    const erro = await prisma.$transaction((tx) => aprovarUma(tx, id, admin.id, versaoVista(fd, id))).catch(semSobreposicao);
     if (erro) falhas.push(erro);
   }
   refresh();
@@ -184,7 +210,7 @@ export async function rejeitar(id: string, fd: FormData) {
   const retorno = retornoSeguro(fd, ORIGENS);
   const back = retorno ? `${retorno}?decidir=${id}` : `${LISTA}/${id}`;
   const { justificativa } = validar(motivoSchema, fd, back);
-  const erro = await prisma.$transaction((tx) => rejeitarUma(tx, id, admin.id, justificativa));
+  const erro = await prisma.$transaction((tx) => rejeitarUma(tx, id, admin.id, justificativa, versaoVista(fd)));
   refresh();
   if (erro) voltar(back, { erro });
   voltar(retorno ?? PAINEL, { ok: "Solicitação rejeitada." });
@@ -198,10 +224,10 @@ export async function cancelarPeloAdmin(id: string, fd: FormData) {
     const b = await tx.booking.findUnique({ where: { id }, include: { vehicle: true } });
     if (!b) return "Agendamento não encontrado.";
     if (!ATIVOS.includes(b.status)) return "Este agendamento não está ativo.";
-    await tx.booking.update({
-      where: { id },
-      data: { status: "CANCELADO", justificativa: motivo, decididoPorId: admin.id, decididoEm: new Date(), versaoAnterior: null },
+    const gravou = await gravarSeIgual(tx, b, {
+      status: "CANCELADO", justificativa: motivo, decididoPorId: admin.id, decididoEm: new Date(), versaoAnterior: null,
     });
+    if (!gravou) return "Este agendamento mudou enquanto você analisava. Abra de novo para conferir.";
     await notificarUsuario(
       tx, b.userId, id, "CANCELADO",
       `Sua reserva de ${b.vehicle.prefixo} (${fmtDateTime(b.inicio)}) foi cancelada pelo administrador.${motivo ? ` Motivo: ${motivo}` : ""}`,

@@ -11,6 +11,7 @@ import { aprovarLote } from "./agendamentos/actions";
 
 const LIMITE_FILA = 100;
 const LIMITE_LISTA = 10;
+const LIMITE_KM = 20;
 
 /** Quantas reservas aprovadas colidem com cada pendente — uma consulta só, cruzada em memória. */
 async function calcularConflitos(pendentes: { id: string; vehicleId: string; inicio: Date; fim: Date }[]) {
@@ -37,12 +38,14 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
   const inicioMes = parseLocalBr(`${toInputDateTime(agora).slice(0, 7)}-01T00:00`) ?? agora;
   const concluidosMes = { status: { in: OCUPAM }, fim: { gte: inicioMes, lte: agora } };
   const aConcluir = { status: { in: OCUPAM }, fim: { gt: agora } };
+  // reservas que seguram o veículo, em que o uso já começou e falta algum km (mesma regra de pendenciaKm)
+  const semKm = { status: { in: OCUPAM }, inicio: { lte: agora }, OR: [{ kmInicial: null }, { kmFinal: null, fim: { lte: agora } }] };
   const resumo = { id: true, inicio: true, fim: true, user: { select: { nome: true } }, vehicle: { select: { prefixo: true } } };
-  const [pendentes, totalPendentes, totalConcluidos, concluidos, totalAConcluir, aprovadosAConcluir, kmCandidatas] = await Promise.all([
+  const [pendentes, totalPendentes, totalConcluidos, concluidos, totalAConcluir, aprovadosAConcluir, totalSemKm, kmCandidatas] = await Promise.all([
     prisma.booking.findMany({
       where: fila,
       select: {
-        id: true, vehicleId: true, inicio: true, fim: true, destino: true, status: true, versaoAnterior: true,
+        id: true, vehicleId: true, inicio: true, fim: true, destino: true, status: true, versaoAnterior: true, atualizadoEm: true,
         user: { select: { nome: true, setor: true, email: true } },
         vehicle: { select: { prefixo: true } },
       },
@@ -54,16 +57,16 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
     prisma.booking.findMany({ where: concluidosMes, select: resumo, orderBy: { fim: "desc" }, take: LIMITE_LISTA }),
     prisma.booking.count({ where: aConcluir }),
     prisma.booking.findMany({ where: aConcluir, select: resumo, orderBy: { inicio: "asc" }, take: LIMITE_LISTA }),
-    // reservas aprovadas em que o uso já começou e falta algum km (confirmado em memória por pendenciaKm)
+    prisma.booking.count({ where: semKm }),
     prisma.booking.findMany({
-      where: { status: { in: OCUPAM }, inicio: { lte: agora }, OR: [{ kmInicial: null }, { kmFinal: null, fim: { lte: agora } }] },
+      where: semKm,
       select: {
         id: true, status: true, inicio: true, fim: true, kmInicial: true, kmFinal: true,
         user: { select: { nome: true, setor: true } },
         vehicle: { select: { prefixo: true } },
       },
       orderBy: { inicio: "desc" },
-      take: 200,
+      take: LIMITE_KM,
     }),
   ]);
   const kmPendentes = kmCandidatas.flatMap((b) => {
@@ -89,7 +92,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
           <Stat valor={totalPendentes} rotulo="Pendentes de decisão" />
           <Stat valor={totalConcluidos} rotulo="Concluídos no mês" />
           <Stat valor={totalAConcluir} rotulo="Aprovados a concluir" />
-          <Stat valor={kmPendentes.length} rotulo="Reservas sem km" />
+          <Stat valor={totalSemKm} rotulo="Reservas sem km" />
         </Stats>
 
         <section>
@@ -100,6 +103,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
                 <tr key={b.id}>
                   <td>
                     <input type="checkbox" name="ids" value={b.id} disabled={conflitos[i] > 0} aria-label="Selecionar" />
+                    <input type="hidden" name={`versao:${b.id}`} value={b.atualizadoEm.toISOString()} />
                   </td>
                   <td>
                     <div>
@@ -137,11 +141,11 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
           </form>
         </section>
 
-        {kmPendentes.length > 0 && (
+        {totalSemKm > 0 && (
           <section aria-labelledby="km-pendente">
-            <h2 id="km-pendente" className="mb-2 text-base font-semibold">Quilometragem pendente ({kmPendentes.length})</h2>
+            <h2 id="km-pendente" className="mb-2 text-base font-semibold">Quilometragem pendente ({totalSemKm})</h2>
             <ul className={`divide-y text-sm ${cardCls}`}>
-              {kmPendentes.slice(0, 20).map(({ b, texto }) => (
+              {kmPendentes.map(({ b, texto }) => (
                 <li key={b.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
                   <span>
                     <b>{b.vehicle.prefixo}</b> — {b.user.nome}
@@ -151,7 +155,9 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
                 </li>
               ))}
             </ul>
-            {kmPendentes.length > 20 && <p className="mt-1 text-xs text-slate-500">Mostrando 20 de {kmPendentes.length}.</p>}
+            {totalSemKm > kmPendentes.length && (
+              <p className="mt-1 text-xs text-slate-500">Mostrando as {kmPendentes.length} mais recentes de {totalSemKm}.</p>
+            )}
             <p className="mt-1 text-xs text-slate-500">Os solicitantes são lembrados por notificação a cada 24 horas.</p>
           </section>
         )}

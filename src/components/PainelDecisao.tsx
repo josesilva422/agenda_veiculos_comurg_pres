@@ -29,6 +29,8 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
   }
 
   const decidivel = AGUARDANDO.includes(b.status);
+  // a versão que está na tela: se a solicitação mudar antes da decisão, a ação recusa e pede para conferir de novo
+  const versao = <input type="hidden" name="versao" value={b.atualizadoEm.toISOString()} />;
   const alteracao = b.status === "ALTERACAO_PENDENTE";
   const podeKm = OCUPAM.includes(b.status);
   // pedido de alteração: os conflitos são conferidos no veículo e período pedidos
@@ -107,6 +109,7 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
             </div>
             <form action={substituirEAprovar.bind(null, id)} className="space-y-3">
               {volta}
+              {versao}
               <Field label="Motivo da substituição">
                 <input name="justificativa" maxLength={300} className={inputCls} />
               </Field>
@@ -127,6 +130,7 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
               <h2 className="mb-2 font-semibold">Aprovar</h2>
               <form action={aprovar.bind(null, id)}>
                 {volta}
+                {versao}
                 <button className={`${btnCls} w-full text-center sm:w-auto`} disabled={conflitos.length > 0}>
                   {alteracao ? "Aprovar alteração" : "Aprovar solicitação"}
                 </button>
@@ -137,6 +141,7 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
             </div>
             <form action={rejeitar.bind(null, id)} className="border-t pt-4 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
               {volta}
+              {versao}
               <h2 className="mb-2 font-semibold">Rejeitar</h2>
               <Field label={alteracao ? "Justificativa (a reserva original é mantida)" : "Justificativa"}>
                 <textarea name="justificativa" required minLength={3} maxLength={300} rows={3} className={inputCls} />
