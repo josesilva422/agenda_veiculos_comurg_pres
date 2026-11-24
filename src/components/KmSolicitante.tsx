@@ -18,6 +18,8 @@ export default async function KmSolicitante({ id, retorno }: { id: string; retor
   const pend = pendenciaKm(b);
   const iniciou = b.inicio <= new Date();
   const km = percurso(b.kmInicial, b.kmFinal);
+  // sugestão: o km inicial é o km final da última reserva deste veículo (continua editável)
+  const sugerido = b.kmInicial === null && anterior?.deFinal ? anterior.km : null;
 
   return (
     <div className="space-y-4">
@@ -40,7 +42,7 @@ export default async function KmSolicitante({ id, retorno }: { id: string; retor
       <form action={registrarKm.bind(null, id)} className="grid gap-4 sm:grid-cols-2">
         <input type="hidden" name="retorno" value={retorno} />
         <Field label="Km inicial (hodômetro na retirada)">
-          <input name="kmInicial" inputMode="numeric" pattern="[0-9]*" defaultValue={b.kmInicial ?? ""} placeholder="Ex.: 45230" className={inputCls} />
+          <input name="kmInicial" inputMode="numeric" pattern="[0-9]*" defaultValue={b.kmInicial ?? sugerido ?? ""} placeholder="Ex.: 45230" className={inputCls} />
         </Field>
         <Field label="Km final (hodômetro na devolução)">
           <input
@@ -53,6 +55,12 @@ export default async function KmSolicitante({ id, retorno }: { id: string; retor
             className={`${inputCls} disabled:bg-slate-100`}
           />
         </Field>
+        {sugerido !== null && (
+          <p className="rounded bg-blue-50 px-3 py-2 text-xs text-blue-900 sm:col-span-2">
+            O km inicial veio preenchido com o km final da última reserva deste veículo ({sugerido.toLocaleString("pt-BR")}).
+            Confira o hodômetro e corrija se for diferente.
+          </p>
+        )}
         {km !== null && (
           <p className="text-sm text-slate-600 sm:col-span-2">
             Percurso registrado: <b>{km.toLocaleString("pt-BR")} km</b>

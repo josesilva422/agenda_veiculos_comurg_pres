@@ -6,7 +6,8 @@ export const KM_MAX = 9_999_999;
 /** Percurso acima disso é só destacado para o administrador conferir (não bloqueia). */
 export const PERCURSO_ALERTA_KM = 1000;
 
-export type Referencia = { km: number; quando: Date } | null;
+/** `deFinal`: o número veio do km FINAL da outra reserva (e não só de um km inicial). */
+export type Referencia = { km: number; quando: Date; deFinal?: boolean } | null;
 
 const n = (v: number) => v.toLocaleString("pt-BR");
 const dia = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
@@ -84,7 +85,7 @@ export async function referenciasKm(
     }),
   ]);
   return {
-    anterior: ant ? { km: (ant.kmFinal ?? ant.kmInicial)!, quando: ant.inicio } : null,
+    anterior: ant ? { km: (ant.kmFinal ?? ant.kmInicial)!, quando: ant.inicio, deFinal: ant.kmFinal !== null } : null,
     proximo: prox ? { km: (prox.kmInicial ?? prox.kmFinal)!, quando: prox.inicio } : null,
   };
 }
