@@ -84,7 +84,7 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
         )}
 
         {decidivel && conflitos.length > 0 && (
-          <section className={`space-y-3 border-red-200 p-6 ${cardCls}`}>
+          <section className={`space-y-3 border-red-200 p-4 sm:p-6 ${cardCls}`}>
             <div>
               <h2 className="font-semibold">Cancelar solicitação aprovada</h2>
               <p className="mt-2 text-sm text-slate-600">
@@ -108,7 +108,7 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
                 <input name="confirmo" type="checkbox" required className="mt-0.5 h-4 w-4 shrink-0 accent-red-700" />
                 <span>Confirmo o cancelamento {conflitos.length === 1 ? "da reserva" : "das reservas"} acima.</span>
               </label>
-              <button className={btnPerigoCls}>
+              <button className={`${btnPerigoCls} w-full text-center sm:w-auto`}>
                 Cancelar {conflitos.length === 1 ? "a reserva" : "as reservas"} em conflito e aprovar esta
               </button>
             </form>
@@ -116,28 +116,32 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
         )}
 
         {decidivel && (
-          <section className={`grid gap-4 p-6 sm:grid-cols-2 ${cardCls}`}>
+          <section className={`grid gap-4 p-4 sm:grid-cols-2 sm:p-6 ${cardCls}`}>
             <div>
               <h2 className="mb-2 font-semibold">Aprovar</h2>
               <form action={aprovar.bind(null, id)}>
                 {volta}
-                <button className={btnCls} disabled={conflitos.length > 0}>
+                <button className={`${btnCls} w-full text-center sm:w-auto`} disabled={conflitos.length > 0}>
                   {alteracao ? "Aprovar alteração" : "Aprovar solicitação"}
                 </button>
               </form>
+              {conflitos.length > 0 && (
+                <p className="mt-2 text-xs text-slate-500">Há conflito de horário: use a opção de cancelar a reserva aprovada, acima.</p>
+              )}
             </div>
-            <form action={rejeitar.bind(null, id)}>
+            <form action={rejeitar.bind(null, id)} className="border-t pt-4 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
               {volta}
-              <Field label={alteracao ? "Rejeitar alteração (mantém a reserva original)" : "Rejeitar — justificativa"}>
-                <textarea name="justificativa" required minLength={3} maxLength={300} rows={2} className={inputCls} />
+              <h2 className="mb-2 font-semibold">Rejeitar</h2>
+              <Field label={alteracao ? "Justificativa (a reserva original é mantida)" : "Justificativa"}>
+                <textarea name="justificativa" required minLength={3} maxLength={300} rows={3} className={inputCls} />
               </Field>
-              <button className={`mt-2 ${btnPerigoCls}`}>Rejeitar</button>
+              <button className={`mt-3 w-full text-center sm:w-auto ${btnPerigoCls}`}>Rejeitar</button>
             </form>
           </section>
         )}
 
         {podeKm && (
-          <section className={`p-6 ${cardCls}`}>
+          <section className={`p-4 sm:p-6 ${cardCls}`}>
             <h2 className="mb-1 font-semibold">Quilometragem</h2>
             <p className="mb-3 text-xs text-slate-500">
               Informada pelo solicitante; aqui você pode incluir ou corrigir. Campo em branco apaga o valor. O solicitante é avisado das mudanças.
@@ -175,7 +179,7 @@ export default async function PainelDecisao({ id, retorno }: { id: string; retor
         )}
 
         {ATIVOS.includes(b.status) && (
-          <section className={`p-6 ${cardCls}`}>
+          <section className={`p-4 sm:p-6 ${cardCls}`}>
             <h2 className="mb-2 font-semibold">Gerenciar</h2>
             <div className="flex flex-wrap items-end gap-4">
               <Link href={`/admin/agendamentos/${id}/editar`} className={btnGhostCls}>Editar dados</Link>
