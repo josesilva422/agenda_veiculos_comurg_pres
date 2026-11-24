@@ -30,6 +30,3 @@ export const fmtDateTime = (d: Date) =>
 export const fmtPeriodo = (b: { inicio: Date; fim: Date }) => `${fmtDateTime(b.inicio)} → ${fmtDateTime(b.fim)}`;
 
 export const fmtData = (d: Date | null | undefined) => (d ? d.toLocaleDateString("pt-BR", { timeZone: TZ }) : "—");
-
-/** Date -> "YYYY-MM-DD" para <input type="date">. */
-export const toInputDate = (d: Date | null | undefined) => (d ? d.toISOString().slice(0, 10) : "");

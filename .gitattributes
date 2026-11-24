@@ -1,0 +1,2 @@
+# Migrações do PostgreSQL sempre com LF: o Prisma confere o checksum do arquivo, e na Vercel (Linux) ele é lido com LF.
+prisma/postgres/**/*.sql text eol=lf

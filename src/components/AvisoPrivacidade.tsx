@@ -30,7 +30,7 @@ export default function AvisoPrivacidade() {
         </div>
         <div className="space-y-3 px-5 py-4 text-sm leading-relaxed text-slate-700">
           <p>
-            Os dados pessoais informados neste sistema (nome, matrícula, telefone, cargo, lotação e CNH) são usados apenas para o
+            Os dados pessoais informados neste sistema (nome, e-mail, matrícula, telefone, cargo, lotação e contato) são usados apenas para o
             controle de uso dos veículos da Comurg.
           </p>
           <p>Eles ficam acessíveis somente a quem precisa deles para essa finalidade.</p>

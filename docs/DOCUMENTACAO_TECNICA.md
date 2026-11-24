@@ -141,7 +141,6 @@ erDiagram
 | `nome`, `email` (único), `senhaHash` | `email` em minúsculas. A senha nunca é guardada em texto. |
 | `matricula` (única, opcional) | Também serve para o login. |
 | `telefone`, `cargo`, `setor` (lotação), `contato` | Obrigatórios no cadastro pelo administrador. |
-| `cnh`, `cnhValidade` | Opcionais; apenas informativos (o painel não mostra mais alertas de vencimento). |
 | `role` | `ADMIN` ou `USER`. |
 | `ativo` | `false` bloqueia o acesso na hora (sem apagar histórico). |
 | `trocarSenha` | `true` enquanto usa a senha provisória: força a troca no primeiro acesso. |
@@ -365,7 +364,7 @@ Em produção `env.ts` **recusa iniciar** com segredo ausente/curto, sem `NEXTAU
 - Sessão conferida no banco a cada requisição; desativação tem efeito imediato.
 - Permissão checada em cada ação, API e página (`requireUser`/`requireAdmin`); o `retorno` dos formulários só aceita caminhos de uma lista.
 - Cabeçalhos de segurança (`next.config.ts`): `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`.
-- Dados pessoais tratados: nome, e-mail, matrícula, telefone, cargo, lotação, contato e CNH. Aviso de privacidade no login; acesso restrito por perfil.
+- Dados pessoais tratados: nome, e-mail, matrícula, telefone, cargo, lotação, e contato (a CNH não é coletada; as colunas foram removidas na migração `0006`). Aviso de privacidade no login; acesso restrito por perfil.
 - O aceite do Termo de Responsabilidade é registrado por agendamento (data/hora) e aparece nos relatórios.
 - Segredos (`DATABASE_URL`, `DIRECT_URL`, `NEXTAUTH_SECRET`) ficam só nas variáveis da Vercel / no `.env` local (ignorado pelo Git).
 - Backups contêm dados pessoais: proteger o acesso.

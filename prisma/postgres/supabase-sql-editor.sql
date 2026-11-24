@@ -1,6 +1,6 @@
 -- ============================================================
 -- Agendamento de Veículos — banco completo para o SQL Editor do Supabase
--- Migrações incluídas: 0001_init, 0002_sem_sobreposicao, 0003_rls, 0004_km_registro, 0005_alteracao_mantem_reserva
+-- Migrações incluídas: 0001_init, 0002_sem_sobreposicao, 0003_rls, 0004_km_registro, 0005_alteracao_mantem_reserva, 0006_remove_cnh
 -- Cole tudo e clique em Run. Rode UMA vez, em projeto vazio.
 -- GERADO por scripts/pg-sql-editor.ts (npm run db:pg:sql). Não edite à mão.
 -- ============================================================
@@ -220,6 +220,11 @@ ALTER TABLE "Booking"
   EXCLUDE USING gist ("vehicleId" WITH =, tsrange("inicio", "fim") WITH &&)
   WHERE ("status" IN ('APROVADO', 'ALTERACAO_PENDENTE'));
 
+-- ---------- 0006_remove_cnh ----------
+-- A CNH não é usada pelo sistema: deixa de ser coletada e os dados já guardados são apagados (LGPD: só o necessário).
+ALTER TABLE "User" DROP COLUMN "cnh";
+ALTER TABLE "User" DROP COLUMN "cnhValidade";
+
 -- ---------- registro das migrações (para o Prisma não aplicar de novo) ----------
 CREATE TABLE "_prisma_migrations" (
     "id" VARCHAR(36) PRIMARY KEY NOT NULL,
@@ -237,5 +242,6 @@ INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "migration_na
   (gen_random_uuid()::text, '04a6ffe17595c85992865c0882d12a7e37abfac24bb4dbc7cb8557734745b088', now(), '0001_init', 1),
   (gen_random_uuid()::text, 'd0d30381a5047c9b35dadff17cae2a9fca673353875a0eab5125a5f088667de6', now(), '0002_sem_sobreposicao', 1),
   (gen_random_uuid()::text, '9fd562e798a76e4f5461458f2030e6640dda4fc815755ef6294dfbfad7647106', now(), '0003_rls', 1),
-  (gen_random_uuid()::text, '53a8973900f7af81b570147aaa175b548f5a37a4cd5c51b0de15289d7c48567f', now(), '0004_km_registro', 1),
-  (gen_random_uuid()::text, 'e1dd19a56de6da62fa71f752a0af4608e58929810e1872efaa3f4a1bae5161bf', now(), '0005_alteracao_mantem_reserva', 1);
+  (gen_random_uuid()::text, '3dbb0a78f16692e286935930d1172ff1c45f1f9e97de9ca05e13341c6187ff0d', now(), '0004_km_registro', 1),
+  (gen_random_uuid()::text, 'e1dd19a56de6da62fa71f752a0af4608e58929810e1872efaa3f4a1bae5161bf', now(), '0005_alteracao_mantem_reserva', 1),
+  (gen_random_uuid()::text, 'a064ed7f5b236e8a01e85a8f0e400a831375d84bf49af146e17a24a1c53fe912', now(), '0006_remove_cnh', 1);

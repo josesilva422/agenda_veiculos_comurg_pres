@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { User } from "@prisma/client";
 import { Field, btnCls, btnGhostCls, cardCls, inputCls } from "@/components/ui";
-import { toInputDate } from "@/lib/datetime";
 import { REGRAS_SENHA } from "@/lib/senha";
 
 export default function UserForm({
@@ -46,12 +45,6 @@ export default function UserForm({
       </Field>
       <Field label="Contato (ramal, celular ou e-mail alternativo)" className="sm:col-span-2">
         <input name="contato" required defaultValue={user?.contato ?? ""} className={inputCls} />
-      </Field>
-      <Field label="CNH (número, opcional)">
-        <input name="cnh" defaultValue={user?.cnh ?? ""} className={inputCls} />
-      </Field>
-      <Field label="Validade da CNH (opcional)">
-        <input name="cnhValidade" type="date" defaultValue={toInputDate(user?.cnhValidade)} className={inputCls} />
       </Field>
       <p className="rounded bg-slate-50 p-2 text-xs text-slate-600 sm:col-span-2">
         {user

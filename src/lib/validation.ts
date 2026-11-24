@@ -27,12 +27,6 @@ const userBase = {
   cargo: texto(80).min(1, "Informe o cargo."),
   setor: texto(60).min(1, "Informe a lotação."),
   contato: texto(120).min(1, "Informe o contato."),
-  cnh: opcional(30),
-  cnhValidade: z
-    .string()
-    .trim()
-    .transform((v) => (v === "" ? null : new Date(v + "T12:00:00")))
-    .nullable(),
   role: z.enum(["ADMIN", "USER"]),
 };
 

@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
-import { fmtData } from "@/lib/datetime";
 import { Dados, Field, Titulo, btnCls, cardCls, inputCls } from "@/components/ui";
 import { alterarSenha } from "./actions";
 
@@ -21,8 +20,6 @@ export default async function PerfilPage() {
             ["Cargo", user.cargo ?? "—"],
             ["Lotação", user.setor ?? "—"],
             ["Contato", user.contato ?? "—"],
-            ["CNH", user.cnh ?? "—"],
-            ["Validade da CNH", fmtData(user.cnhValidade)],
           ]}
         />
         <section className={`p-6 ${cardCls}`}>

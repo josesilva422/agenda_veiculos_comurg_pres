@@ -40,8 +40,6 @@ model User {
   setor       String? // lotação
   cargo       String?
   contato     String?
-  cnh         String?
-  cnhValidade DateTime?
   role        Role     @default(USER)
   ativo       Boolean  @default(true)
   // true enquanto o usuário usa a senha padrão: é obrigado a trocá-la no primeiro acesso

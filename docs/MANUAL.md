@@ -72,7 +72,7 @@ Se ele aprovar, a reserva passa para os dados novos; se rejeitar, nada muda. Edi
 Laranja: sua solicitação pendente · Azul: sua reserva com alteração pendente (aparece no horário aprovado) · Verde: sua reserva aprovada · Cinza: ocupado por outra pessoa.
 
 ### Meu perfil
-Seus dados (nome, matrícula, telefone, cargo, lotação, contato, CNH) e a troca de senha
+Seus dados (nome, matrícula, telefone, cargo, lotação, contato) e a troca de senha
 (mesma regra: 8+ caracteres com letra, número e caractere especial).
 
 ## Administrador
@@ -112,7 +112,6 @@ A seção **Quilometragem pendente** lista as reservas em que falta o km inicial
 
 ### Usuários
 - **Novo usuário** e **Editar** abrem pop-ups. Campos obrigatórios: nome completo, e-mail, perfil, **matrícula** (única), telefone, cargo, **lotação** e contato.
-  **CNH e validade são opcionais.**
 - Ao salvar um usuário novo, o sistema **gera uma senha provisória só dele** (ex.: `Hqtz-4829-Mwbe`) e a mostra em verde no pop-up.
   **Anote e entregue ao usuário na hora:** ela fica visível só por 2 minutos e não pode ser consultada depois. No primeiro acesso ele cria a própria senha.
 - Esqueceu a senha? Na edição, **Gerar nova senha provisória** cria outra, mostrada do mesmo jeito; as sessões abertas do usuário são encerradas.
