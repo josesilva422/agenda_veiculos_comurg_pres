@@ -35,10 +35,11 @@
     ".next-perf-dev/types/**/*.ts",
     ".next-perf-tp/types/**/*.ts",
     ".next-perf/types/**/*.ts",
+    ".next-smoke/types/**/*.ts",
     ".next-test/types/**/*.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
-    ".next-smoke/types/**/*.ts"
+    ".next-e2e/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

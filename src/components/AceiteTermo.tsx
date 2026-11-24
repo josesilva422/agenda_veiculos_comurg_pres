@@ -27,7 +27,7 @@ export default function AceiteTermo() {
             }}
             className="cursor-pointer font-medium text-marca underline underline-offset-2 hover:text-marca-forte"
           >
-            Termo de Responsabilidade pelo uso e guarda do veículo
+            Termo de Responsabilidade pelo uso e guarda de veículo
           </span>
         </span>
       </label>

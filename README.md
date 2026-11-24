@@ -34,5 +34,6 @@ Verificações: `npm test`, `npm run lint`, `npm run build`.
 |---|---|
 | `npm run db:deploy` | Aplica migrações pendentes (produção) |
 | `npm run admin:create` | Cria o primeiro administrador (variáveis `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`) |
+| `npm run e2e` | Testes ponta a ponta (Playwright); veja a documentação técnica |
 | `npm run backup` | Backup do banco (servidor próprio, SQLite) |
 | `npm run db:pg:sync` | Gera `prisma/postgres/schema.prisma` (PostgreSQL) a partir do schema principal |

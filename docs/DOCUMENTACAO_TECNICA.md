@@ -374,7 +374,11 @@ Em produção `env.ts` **recusa iniciar** com segredo ausente/curto, sem `NEXTAU
   limite de login (`rate-limit`), veículo (`veiculo`), resumo de relatórios (`reports-summary`) e configuração (`env`).
 - `npm run lint` e `npx tsc --noEmit` devem passar antes de cada envio.
 - As migrações PostgreSQL foram validadas em um PostgreSQL real (incluindo a restrição de sobreposição).
-- **Não há** testes de ponta a ponta (navegador) automatizados; o fluxo completo é conferido manualmente.
+- **Testes ponta a ponta (E2E)** com **Playwright**, na pasta `e2e/`: `npm run e2e` compila o sistema em modo de produção, sobe-o numa porta à parte (3107) com um banco SQLite novo
+  (`prisma/e2e.db`, recriado a cada execução) e roda um navegador de verdade (Chromium). Não mexem no banco de desenvolvimento nem na pasta `.next`.
+  Cobrem: acesso e permissões, cadastro de usuário e primeiro acesso, solicitar/aprovar/substituir, pedido de alteração, quilometragem, cadastros, relatórios,
+  desativação de usuário e o visual no celular (375 px). Os arquivos rodam em ordem (um cria dados que o seguinte usa). Para repetir sem recompilar: `E2E_SEM_BUILD=1 npm run e2e`;
+  relatório: `npm run e2e:relatorio`. Na primeira vez é preciso baixar o navegador: `npx playwright install chromium`.
 
 ## 16. Limitações conhecidas
 - Notificações apenas **dentro do sistema** (sem e-mail ou WhatsApp); os lembretes de km só são gerados quando o usuário abre o sistema.
