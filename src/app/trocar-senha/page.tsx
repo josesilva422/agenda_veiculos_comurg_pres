@@ -2,7 +2,9 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { cardCls } from "@/components/ui";
+import Image from "next/image";
 import { APP } from "@/lib/config";
+import FaixaComurg from "@/components/FaixaComurg";
 import { REGRAS_SENHA } from "@/lib/senha";
 import FormTrocarSenha from "./FormTrocarSenha";
 
@@ -12,8 +14,11 @@ export default async function TrocarSenhaPage() {
   if (!user?.trocarSenha) redirect(u.role === "ADMIN" ? "/admin" : "/usuario");
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center p-4">
-      <div className="mb-5 border-l-4 border-marca pl-3">
+    <>
+    <FaixaComurg />
+    <main className="mx-auto flex min-h-[calc(100vh-6px)] w-full max-w-sm flex-col justify-center p-4">
+      <div className="mb-6 text-center">
+        <Image src="/logo-comurg.png" alt="Comurg — Companhia de Urbanização de Goiânia" width={668} height={587} className="mx-auto mb-4 h-auto w-32" priority />
         <h1 className="text-lg font-semibold text-marca">{APP.nome}</h1>
         <p className="text-sm text-slate-600">Crie sua senha de acesso</p>
       </div>
@@ -25,5 +30,6 @@ export default async function TrocarSenhaPage() {
         <FormTrocarSenha />
       </div>
     </main>
+    </>
   );
 }

@@ -93,7 +93,10 @@ A seção **Quilometragem pendente** lista as reservas em que falta o km inicial
 ### Usuários
 - **Novo usuário** e **Editar** abrem pop-ups. Campos obrigatórios: nome completo, e-mail, perfil, **matrícula** (única), telefone, cargo, **lotação** e contato.
   **CNH e validade são opcionais.**
-- O usuário novo recebe a **senha padrão** e é obrigado a trocá-la no primeiro acesso. Informe a senha padrão a ele.
+- O campo **Senha inicial** (ao lado da Lotação) já vem com a **senha padrão** do sistema; pode ser trocada por outra que siga a regra da senha.
+  O usuário é obrigado a trocá-la no primeiro acesso. Informe a senha a ele.
+- Na edição, se o usuário **ainda não fez o primeiro acesso**, um aviso amarelo mostra a senha padrão (ou informa que a senha foi definida pelo administrador).
+  O campo **Nova senha (só para redefinir)** define uma nova senha provisória; em branco, mantém a atual. Também vale o botão **Redefinir para a senha padrão**.
 - Na edição, **Redefinir para a senha padrão** volta a senha (para quem esqueceu); ele troca no próximo acesso. Não vale para a própria conta (use Meu perfil).
 - **Desativar** impede o acesso na hora, sem apagar o histórico. **Reativar** devolve o acesso.
 - O termo de responsabilidade não é anexado ao usuário: o **aceite eletrônico** é feito pelo próprio solicitante a cada agendamento e fica registrado nele.

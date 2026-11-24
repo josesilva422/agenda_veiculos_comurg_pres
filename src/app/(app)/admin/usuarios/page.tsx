@@ -1,5 +1,7 @@
 import Link from "next/link";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { SENHA_PADRAO } from "@/lib/senha";
 import ModalDecisao from "@/components/ModalDecisao";
 import { Tabela, Titulo, btnCls, linkCls } from "@/components/ui";
 import { redefinirSenha, salvarUsuario, toggleUserAtivo } from "./actions";
@@ -13,6 +15,13 @@ export default async function UsuariosPage({ searchParams }: { searchParams: Pro
     prisma.user.findMany({ orderBy: { nome: "asc" } }),
     editar ? prisma.user.findUnique({ where: { id: editar } }) : null,
   ]);
+  // primeiro acesso pendente? e a senha ainda é a padrão? (compara o código guardado, nunca a senha em si)
+  const senhaInfo = editando
+    ? {
+        primeiroAcesso: editando.trocarSenha,
+        padrao: editando.trocarSenha && (await bcrypt.compare(SENHA_PADRAO, editando.senhaHash)),
+      }
+    : undefined;
   const abrir = (id: string) => `${LISTA}?editar=${id}`;
 
   return (
@@ -78,7 +87,7 @@ export default async function UsuariosPage({ searchParams }: { searchParams: Pro
       {editando && (
         <ModalDecisao key={editando.id} param="editar" titulo="Editar usuário">
           <div className="space-y-5">
-            <UserForm action={salvarUsuario.bind(null, editando.id)} user={editando} retorno={LISTA} semCartao />
+            <UserForm action={salvarUsuario.bind(null, editando.id)} user={editando} retorno={LISTA} semCartao senhaInfo={senhaInfo} />
             <section className="border-t pt-5">
               <h2 className="mb-1 text-base font-semibold">Senha</h2>
               <p className="mb-3 text-sm text-slate-600">

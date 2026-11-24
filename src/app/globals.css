@@ -3,9 +3,13 @@
 /* Identidade visual: troque as cores aqui e o sistema inteiro acompanha.
    Viram classes: bg-marca, text-marca, bg-marca-suave, border-borda, bg-fundo... */
 @theme {
-  --color-marca: #0e4c5a;
-  --color-marca-forte: #0a3944;
-  --color-marca-suave: #e7eff1;
+  --color-marca: #005f27; /* verde-escuro do nome COMURG */
+  --color-marca-forte: #004a1e;
+  --color-marca-suave: #e6f2ea;
+  /* demais cores do logo: faixa superior e detalhes */
+  --color-comurg-laranja: #f37020;
+  --color-comurg-verde: #0d880b;
+  --color-comurg-indigo: #3e4095;
   --color-borda: #d8dce2;
   --color-fundo: #f4f5f7;
   --font-sans: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;

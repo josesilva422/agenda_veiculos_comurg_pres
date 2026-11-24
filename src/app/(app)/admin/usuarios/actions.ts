@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { duplicado, retornoSeguro, validar, voltar } from "@/lib/action";
-import { SENHA_PADRAO } from "@/lib/senha";
+import { SENHA_PADRAO, validarSenhaForte } from "@/lib/senha";
 import { userSchema } from "@/lib/validation";
 
 const LISTA = "/admin/usuarios";
@@ -15,15 +15,24 @@ export async function salvarUsuario(id: string | null, fd: FormData) {
   // vindo do pop-up de cadastro/edição, volta para a lista (com o pop-up aberto se der erro)
   const retorno = retornoSeguro(fd, [LISTA]);
   const back = retorno ? `${LISTA}?${id ? `editar=${id}` : "novo=1"}` : `${LISTA}/${id ?? "novo"}`;
-  const dados = validar(userSchema, fd, back);
+  const { senha: senhaDigitada, ...dados } = validar(userSchema, fd, back);
   if (id === admin.id && dados.role !== "ADMIN") {
     voltar(back, { erro: "Você não pode remover seu próprio perfil de administrador." });
   }
+  // senha preenchida: define a senha (cadastro) ou redefine (edição). O usuário sempre troca no próximo acesso.
+  const senhaNova = senhaDigitada && senhaDigitada.trim() !== "" ? senhaDigitada : null;
+  if (senhaNova) {
+    const regra = validarSenhaForte(senhaNova);
+    if (regra) voltar(back, { erro: regra });
+    if (id === admin.id) voltar(back, { erro: "Para a sua própria senha, use Meu perfil." });
+  }
   let salvoId = id;
   try {
-    if (id) await prisma.user.update({ where: { id }, data: dados });
-    else {
-      const senhaHash = await bcrypt.hash(SENHA_PADRAO, 10);
+    if (id) {
+      const novaSenha = senhaNova ? { senhaHash: await bcrypt.hash(senhaNova, 10), trocarSenha: true } : {};
+      await prisma.user.update({ where: { id }, data: { ...dados, ...novaSenha } });
+    } else {
+      const senhaHash = await bcrypt.hash(senhaNova ?? SENHA_PADRAO, 10);
       salvoId = (await prisma.user.create({ data: { ...dados, senhaHash, trocarSenha: true } })).id;
     }
   } catch (e) {
@@ -32,7 +41,11 @@ export async function salvarUsuario(id: string | null, fd: FormData) {
     voltar(back, { erro: campo.includes("matricula") ? "Já existe um usuário com esta matrícula." : "Já existe um usuário com este e-mail." });
   }
   revalidatePath(LISTA);
-  voltar(retorno ?? `${LISTA}/${salvoId}`, { ok: id ? "Dados atualizados." : "Usuário criado. Senha inicial: a senha padrão." });
+  voltar(retorno ?? `${LISTA}/${salvoId}`, {
+    ok: id
+      ? senhaNova ? "Dados atualizados. Senha redefinida: o usuário deverá trocá-la no próximo acesso." : "Dados atualizados."
+      : "Usuário criado. Ele deverá trocar a senha no primeiro acesso.",
+  });
 }
 
 /** Volta a senha do usuário para a senha padrão; ele terá de trocá-la no próximo acesso. */

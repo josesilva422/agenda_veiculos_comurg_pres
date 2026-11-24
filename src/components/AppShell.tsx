@@ -3,7 +3,9 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
+import Image from "next/image";
 import { APP } from "@/lib/config";
+import FaixaComurg from "./FaixaComurg";
 import NotificacoesPopover from "./NotificacoesPopover";
 
 export type IconName =
@@ -166,19 +168,31 @@ export default function AppShell({
   const ativo = (href: string) => path === href || (!raizes.has(href) && path.startsWith(`${href}/`));
   const sair = () => signOut({ callbackUrl: "/login" });
 
-  const marca = (
-    <div className="leading-tight">
-      <div className="text-sm font-semibold text-marca">{APP.nome}</div>
-      {APP.orgao && <div className="text-xs text-slate-500">{APP.orgao}</div>}
+  // celular: símbolo pequeno + nome; computador: logo completo da Comurg + nome do sistema
+  const marcaCelular = (
+    <div className="flex items-center gap-2.5">
+      <Image src="/logo-comurg-simbolo.png" alt="Comurg" width={345} height={370} className="h-9 w-auto" priority />
+      <div className="leading-tight">
+        <div className="text-sm font-semibold text-marca">{APP.nome}</div>
+        {APP.orgao && <div className="text-xs text-slate-500">{APP.orgao}</div>}
+      </div>
+    </div>
+  );
+  const marcaMenu = (
+    <div className="text-center">
+      <Image src="/logo-comurg.png" alt="Comurg — Companhia de Urbanização de Goiânia" width={668} height={587} className="mx-auto h-auto w-24" priority />
+      <div className="mt-2 text-sm font-semibold text-marca">{APP.nome}</div>
     </div>
   );
   const itemCls = (on: boolean) =>
-    `flex items-center gap-2.5 rounded px-3 py-2 text-sm ${FOCO} ${
-      on ? "bg-marca-suave font-semibold text-marca" : "text-slate-700 hover:bg-slate-100"
+    `flex items-center gap-2.5 rounded border-l-[3px] px-3 py-2 text-sm ${FOCO} ${
+      on ? "border-comurg-laranja bg-marca-suave font-semibold text-marca" : "border-transparent text-slate-700 hover:bg-slate-100"
     }`;
 
   return (
-    <div className="flex min-h-screen flex-col md:flex-row">
+    <>
+    <FaixaComurg />
+    <div className="flex min-h-[calc(100vh-6px)] flex-col md:flex-row">
       <a href="#conteudo" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:p-2">
         Ir para o conteúdo
       </a>
@@ -186,7 +200,7 @@ export default function AppShell({
       {/* Celular: barra superior + abas */}
       <header className="sticky top-0 z-40 border-b bg-white md:hidden">
         <div className="flex items-center justify-between gap-3 px-4 py-3">
-          {marca}
+          {marcaCelular}
           <div className="flex items-center gap-4 text-sm">
             <NotificacoesPopover notifHref={notifHref} naoLidas={naoLidas} variante="topo" />
             <button onClick={sair} className={`text-slate-700 underline-offset-2 hover:underline ${FOCO}`}>Sair</button>
@@ -209,8 +223,8 @@ export default function AppShell({
       </header>
 
       {/* Computador: menu lateral fixo */}
-      <aside className="hidden w-56 shrink-0 flex-col border-r bg-white md:sticky md:top-0 md:z-40 md:flex md:h-screen">
-        <div className="border-b px-5 py-4">{marca}</div>
+      <aside className="hidden w-56 shrink-0 flex-col border-r bg-white md:sticky md:top-0 md:z-40 md:flex md:h-[calc(100vh-6px)]">
+        <div className="border-b px-4 py-4">{marcaMenu}</div>
 
         <nav aria-label="Principal" className="flex-1 overflow-y-auto px-2 py-3">
           {grupos.map((g, idx) => (
@@ -257,5 +271,6 @@ export default function AppShell({
         {children}
       </main>
     </div>
+    </>
   );
 }

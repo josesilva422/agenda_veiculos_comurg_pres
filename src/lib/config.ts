@@ -2,5 +2,5 @@
 export const APP = {
   nome: "Agendamento de Veículos",
   /** Nome do órgão/empresa, mostrado abaixo do nome do sistema. Deixe vazio para não mostrar. */
-  orgao: "",
+  orgao: "Comurg",
 };

@@ -3,7 +3,9 @@ import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Field, btnCls, cardCls, inputCls } from "@/components/ui";
+import Image from "next/image";
 import { APP } from "@/lib/config";
+import FaixaComurg from "@/components/FaixaComurg";
 
 function LoginForm() {
   const router = useRouter();
@@ -25,10 +27,13 @@ function LoginForm() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center p-4">
-      <div className="mb-5 border-l-4 border-marca pl-3">
+    <>
+    <FaixaComurg />
+    <main className="mx-auto flex min-h-[calc(100vh-6px)] w-full max-w-sm flex-col justify-center p-4">
+      <div className="mb-6 text-center">
+        <Image src="/logo-comurg.png" alt="Comurg — Companhia de Urbanização de Goiânia" width={668} height={587} className="mx-auto mb-4 h-auto w-40" priority />
         <h1 className="text-lg font-semibold text-marca">{APP.nome}</h1>
-        <p className="text-sm text-slate-600">{APP.orgao || "Entre com seu e-mail ou matrícula e sua senha."}</p>
+        <p className="text-sm text-slate-600">Entre com seu e-mail ou matrícula e sua senha.</p>
       </div>
       <form onSubmit={onSubmit} className={`space-y-4 p-5 ${cardCls}`}>
         {trocada && (
@@ -52,6 +57,7 @@ function LoginForm() {
         apenas para o controle de uso dos veículos da Comurg e ficam acessíveis somente a quem precisa deles para essa finalidade.
       </p>
     </main>
+    </>
   );
 }
 

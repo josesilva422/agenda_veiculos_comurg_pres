@@ -1,9 +1,10 @@
 import { ImageResponse } from "next/og";
+import { SIMBOLO_PNG, SIMBOLO_PROPORCAO } from "./icone-simbolo";
 
-/** Ícone do app (instalação no celular e favicon): fundo na cor da marca com as iniciais. */
+/** Ícone do app (instalação no celular e favicon): símbolo da Comurg sobre fundo branco. */
 export function iconePwa(tam: number, mascaravel = false) {
   // ícones "maskable" precisam de margem de segurança: o sistema recorta as bordas
-  const fonte = Math.round(tam * (mascaravel ? 0.34 : 0.42));
+  const alturaSimbolo = Math.round(tam * (mascaravel ? 0.52 : 0.72));
   return new ImageResponse(
     (
       <div
@@ -13,15 +14,12 @@ export function iconePwa(tam: number, mascaravel = false) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#0e4c5a",
-          color: "#ffffff",
-          fontSize: fonte,
-          fontWeight: 700,
-          letterSpacing: -2,
+          background: "#ffffff",
           borderRadius: mascaravel ? 0 : Math.round(tam * 0.18),
         }}
       >
-        AV
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={SIMBOLO_PNG} alt="" height={alturaSimbolo} width={Math.round(alturaSimbolo * SIMBOLO_PROPORCAO)} />
       </div>
     ),
     { width: tam, height: tam },
